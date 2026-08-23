@@ -1,0 +1,32 @@
+:root {
+  --green-primary: #396039;
+  --green-text: #008000;
+  --green-dark: #10310b;
+  --green-light: rgba(57, 96, 57, 0.30);
+  --green-opaque: rgba(57, 96, 57, 0.04);
+  --grey-opaque: rgba(219, 224, 219, 0.70);
+  --cream-primary: #f5f5dc;
+  --white: #fff;
+  --cream-light: rgba(250, 240, 230, 0.80);
+  --cream-border: #faf0e6;
+  --cream-background: rgba(250, 240, 230, 0.30);
+  --font-body: 'Quicksand', sans-serif;
+  --font-display: 'Ubuntu', sans-serif;
+  --content-max: 1440px;
+  --page-gutter: 64px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --page-gutter: 32px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --page-gutter: 16px;
+  }
+}
