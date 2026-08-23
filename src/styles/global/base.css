@@ -1,0 +1,116 @@
+body {
+  min-height: 100dvh;
+  background: var(--white);
+  color: var(--green-dark);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+button,
+a,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--white);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 5px var(--green-dark);
+}
+
+.page-shell {
+  min-height: 100dvh;
+  padding: 0 var(--page-gutter);
+}
+
+.content {
+  min-height: 100dvh;
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+.content--green {
+  color: var(--green-primary);
+}
+
+.content--cream {
+  color: var(--cream-primary);
+}
+
+.back-link,
+.forward-link {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 10px;
+}
+
+.content>.back-link,
+.content>.back-link--button,
+.recipe-list-nav>.back-link {
+  color: #1e5515;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.back-link--button {
+  margin: 0 0 40px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.forward-link img,
+.back-link img {
+  flex: 0 0 auto;
+}
+
+.icon-button {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.icon-button img {
+  display: block;
+}
+
+input {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--cream-light);
+  color: var(--green-dark);
+}
+
+@media (max-width: 767px) {
+  .back-link__desktop {
+    display: none;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
