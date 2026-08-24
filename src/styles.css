@@ -1,0 +1,5 @@
+@import './styles/global/variables.css';
+@import './styles/global/fonts.css';
+@import './styles/global/reset.css';
+@import './styles/global/base.css';
+@import './styles/components/buttons.css';
