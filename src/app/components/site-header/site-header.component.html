@@ -1,0 +1,9 @@
+<header class="site-header">
+  @if (linked) {
+  <a class="site-header__home" routerLink="/" aria-label="Code à Cuisine home">
+    <img [src]="light ? 'img/Capa_2.svg' : 'img/Capa_2 (1).svg'" alt="Code à Cuisine">
+  </a>
+  } @else {
+  <img [src]="light ? 'img/Capa_2.svg' : 'img/Capa_2 (1).svg'" alt="Code à Cuisine">
+  }
+</header>

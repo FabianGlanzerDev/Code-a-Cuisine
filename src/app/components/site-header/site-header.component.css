@@ -1,0 +1,16 @@
+.site-header {
+  width: 100%;
+  padding: 40px 0;
+}
+
+.site-header__home {
+  display: block;
+  width: fit-content;
+  line-height: 0;
+}
+
+.site-header img {
+  display: block;
+  width: 142px;
+  height: 48px;
+}
