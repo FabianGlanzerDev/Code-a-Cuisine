@@ -1,0 +1,166 @@
+.welcome-page {
+  position: relative;
+  min-height: 100dvh;
+  overflow: hidden;
+  padding: 0 var(--page-gutter);
+  background: var(--green-primary);
+  color: var(--cream-primary);
+}
+
+.welcome-shell {
+  position: static;
+  display: flex;
+  min-height: 100dvh;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.welcome-content {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  margin: 96px 0;
+}
+
+.welcome-copy {
+  z-index: 1;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.welcome-copy h2 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 3rem);
+  font-weight: 600;
+}
+
+.welcome-copy h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(3.75rem, 7vw, 6rem);
+  font-weight: 700;
+  line-height: 1.08;
+}
+
+.welcome-start {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+  color: #008000;
+  margin-top: 5.5rem;
+}
+
+.welcome-start:hover,
+.welcome-start:focus-visible {
+  background: #fae0c6;
+}
+
+.welcome-start,
+.welcome-cookbook a {
+  transition: background-color 300ms ease-out;
+}
+
+.welcome-start:hover,
+.welcome-start:focus-visible {
+  background-color: #fae0c6;
+}
+
+.welcome-cookbook a:hover,
+.welcome-cookbook a:focus-visible {
+  background-color: rgb(250 240 230 / 75%);
+}
+
+.welcome-cookbook {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+  font-family: var(--font-display);
+  font-size: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.welcome-cookbook a {
+  display: inline-flex;
+  padding: 12px 16px;
+  align-items: center;
+  gap: 16px;
+  font-family: var(--font-body);
+  font-size: 1.25rem;
+  font-weight: 500;
+  transition: background-color 120ms ease;
+}
+
+.welcome-cookbook a:hover,
+.welcome-cookbook a:focus-visible {
+  background: rgb(245 245 220 / 28%);
+}
+
+.welcome-visual {
+  position: absolute;
+  inset: 0 0 0 auto;
+  height: 100dvh;
+  max-width: none;
+  object-fit: cover;
+}
+
+@media (max-width: 1279px) {
+  .welcome-cookbook {
+    display: block;
+  }
+
+  .welcome-cookbook>span {
+    display: block;
+    margin-bottom: 4px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .welcome-visual {
+    transform: translateX(70%);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .welcome-visual {
+    transform: translateX(50%);
+  }
+}
+
+@media (min-width: 1280px) {
+  .welcome-page {
+    position: static;
+  }
+
+  .welcome-shell {
+    position: relative;
+  }
+}
+
+@media (max-width: 767px) {
+  .welcome-content {
+    width: 80%;
+    margin: 44px 0;
+  }
+
+  .welcome-copy h1 {
+    font-size: clamp(3.2rem, 15vw, 4.5rem);
+  }
+
+  .welcome-start {
+    margin-top: 80px;
+  }
+}
+
+.welcome-imprint {
+  position: absolute;
+  z-index: 2;
+  right: var(--page-gutter);
+  bottom: 24px;
+  font-size: 0.875rem;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

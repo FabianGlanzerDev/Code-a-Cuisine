@@ -1,0 +1,27 @@
+<main class="welcome-page">
+  <div class="welcome-shell">
+    <app-site-header [light]="true" />
+
+    <div class="welcome-content">
+      <div class="welcome-copy">
+        <div>
+          <h2>AI-Powered recipe generator</h2>
+          <h1>Code à Cuisine</h1>
+          <a class="button button--cream welcome-start" routerLink="/generate-recipe">Get started</a>
+        </div>
+
+        <div class="welcome-cookbook">
+          <span>Hungry for inspiration?</span>
+          <a routerLink="/cookbook">
+            Go to cookbook
+            <img src="img/Arrow 18.svg" alt="">
+          </a>
+        </div>
+      </div>
+
+      <a class="welcome-imprint" routerLink="/imprint">Imprint</a>
+
+      <img class="welcome-visual" src="img/Visuals.webp" alt="Illustrated dishes and ingredients">
+    </div>
+  </div>
+</main>
