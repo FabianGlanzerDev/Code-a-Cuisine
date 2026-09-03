@@ -1,0 +1,123 @@
+<main class="page-shell ingredient-page" (click)="dropdownOpen = false; editUnitDropdownOpen = false">
+  <div class="content content--green">
+    <app-site-header [linked]="true" />
+
+    <section class="ingredient-intro">
+      <h1>Generate a recipe</h1>
+      <p>Got random stuff in your kitchen? Pop it in - we've got the perfect recipe waiting.</p>
+    </section>
+
+    <div class="ingredient-workspace">
+      <div class="ingredient-grid">
+        <form class="ingredient-card" (ngSubmit)="addIngredient()">
+          <div class="field ingredient-field">
+            <label for="ingredient">Ingredient</label>
+            <input id="ingredient" name="ingredient" type="text" autocomplete="off" required
+              [(ngModel)]="ingredientName">
+
+            @if (ingredientSuggestions.length) {
+            <div class="ingredient-suggestions" aria-label="Ingredient suggestions">
+              @for (suggestion of ingredientSuggestions; track suggestion) {
+              <button type="button" (click)="selectIngredientSuggestion(suggestion)">
+                {{ suggestion }}
+              </button>
+              }
+            </div>
+            }
+          </div>
+
+          <div class="field">
+            <label for="servingSize">Serving size</label>
+            <div class="serving-row">
+              <input id="servingSize" name="servingSize" min="1" max="10000" type="number" required
+                [(ngModel)]="servingSize">
+
+              <div class="unit-picker" (click)="$event.stopPropagation()">
+                <button class="unit-picker__trigger" type="button" (click)="toggleDropdown()"
+                  [attr.aria-expanded]="dropdownOpen">
+                  <span>{{ selectedUnit.name }}</span>
+                  <img src="img/arrow_drop_down.svg" alt="">
+                </button>
+
+                @if (dropdownOpen) {
+                <div class="unit-picker__menu" role="menu">
+                  @for (unit of units; track unit.name) {
+                  <button type="button" role="menuitem" (click)="selectUnit(unit)">{{ unit.name }}</button>
+                  }
+                </div>
+                }
+              </div>
+
+              <button class="icon-button ingredient-add" type="button" (click)="addIngredient()"
+                aria-label="Add ingredient">
+                <img src="img/add_2.svg" alt="">
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <section class="ingredient-list-card" aria-labelledby="ingredient-list-title">
+          <h2 id="ingredient-list-title">List of your ingredients</h2>
+          <ul>
+            @for (ingredient of generator.requirements.ingredients; track $index) {
+            <li [class.ingredient-row--editing]="ingredient.isEditMode"
+              [class.ingredient-row--menu-open]="ingredient.isEditMode && editUnitDropdownOpen">
+              <div class="ingredient-values">
+                <span class="ingredient-bullet" aria-hidden="true"></span>
+
+                @if (!ingredient.isEditMode) {
+                <span class="ingredient-serving">{{ ingredient.servingSize }}</span>
+                <span class="ingredient-name">{{ ingredient.ingredient }}</span>
+                } @else {
+                <input class="ingredient-edit-amount" aria-label="Serving size" type="number" min="1" max="10000"
+                  [(ngModel)]="editServingSize">
+
+                <div class="unit-picker unit-picker--edit" (click)="$event.stopPropagation()">
+                  <button class="unit-picker__trigger unit-picker__trigger--edit" type="button"
+                    (click)="toggleEditUnitDropdown()" [attr.aria-expanded]="editUnitDropdownOpen">
+                    <span>{{ editUnit.name }}</span>
+                    <img [class.is-open]="editUnitDropdownOpen" src="img/arrow_drop_down.svg" alt="">
+                  </button>
+
+                  @if (editUnitDropdownOpen) {
+                  <div class="unit-picker__menu unit-picker__menu--edit" role="menu">
+                    @for (unit of units; track unit.name) {
+                    <button type="button" role="menuitem" (click)="selectEditUnit(unit)">{{ unit.name }}</button>
+                    }
+                  </div>
+                  }
+                </div>
+
+                <span class="ingredient-name ingredient-name--editing">{{ ingredient.ingredient }}</span>
+                }
+              </div>
+
+              <div class="ingredient-actions">
+                @if (!ingredient.isEditMode) {
+                <button class="icon-button" type="button" (click)="startEdit(ingredient)" aria-label="Edit ingredient">
+                  <img src="img/edit.svg" alt="">
+                </button>
+                } @else {
+                <button class="icon-button ingredient-save" type="button" (click)="saveEdit(ingredient)"
+                  aria-label="Save ingredient">
+                  <img src="img/check.svg" alt="">
+                </button>
+                }
+                <button class="icon-button" type="button" (click)="removeIngredient(ingredient)"
+                  aria-label="Delete ingredient">
+                  <img src="img/delete.svg" alt="">
+                </button>
+              </div>
+            </li>
+            }
+          </ul>
+        </section>
+      </div>
+
+      <button class="button button--primary ingredient-next" type="button"
+        [disabled]="!generator.requirements.ingredients.length" (click)="continueToPreferences()">
+        Next step
+      </button>
+    </div>
+  </div>
+</main>
