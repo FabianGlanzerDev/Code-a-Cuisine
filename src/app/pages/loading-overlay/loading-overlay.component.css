@@ -1,0 +1,41 @@
+.loading-overlay {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  overflow: auto;
+  padding: 0 var(--page-gutter);
+  background: var(--green-primary);
+  color: var(--cream-primary);
+}
+
+.loading-shell {
+  position: relative;
+  display: flex;
+  min-height: 100dvh;
+  max-width: var(--content-max);
+  margin: 0 auto;
+  align-items: center;
+  justify-content: center;
+}
+
+.loading-shell app-site-header {
+  position: absolute;
+  inset: 0 0 auto;
+}
+
+.loading-content {
+  text-align: center;
+}
+
+.loading-content img {
+  width: min(288px, 80vw);
+  height: 320px;
+  object-fit: contain;
+}
+
+.loading-content h1 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2.5rem, 6vw, 3rem);
+  font-weight: 700;
+}
