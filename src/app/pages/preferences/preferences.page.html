@@ -1,0 +1,127 @@
+@if (loading) {
+<app-loading-overlay />
+}
+
+<main class="page-shell preferences-page">
+  <div class="content content--green">
+    <app-site-header />
+
+    <a class="back-link" routerLink="/generate-recipe">
+      <img src="img/Arrow 11.svg" alt="">
+      <span class="back-link__desktop">Ingredients</span>
+    </a>
+
+    <section class="preferences-content">
+      <h1>Choose your preferences</h1>
+
+      @if (quota.status) {
+      <p class="quota-status" aria-live="polite">
+        Today: {{ quota.status.ipRemaining }} of {{ quota.status.ipLimit }} recipe suggestions available for your IP.
+        System capacity: {{ quota.status.systemRemaining }} of {{ quota.status.systemLimit }}.
+      </p>
+      }
+
+      <div class="counter-grid">
+        <section>
+          <h2>How many portions you need?</h2>
+          <div class="counter-row">
+            <button class="icon-button counter-button" type="button" (click)="decrease('portionsAmount')"
+              [disabled]="generator.requirements.portionsAmount <= 1" aria-label="Decrease portions">
+              <img src="img/Minus.svg" alt="">
+            </button>
+            <span class="counter-value">{{ generator.requirements.portionsAmount }}</span>
+            <span>Portions</span>
+            <button class="icon-button counter-button" type="button" (click)="increase('portionsAmount')"
+              [disabled]="generator.requirements.portionsAmount >= 12" aria-label="Increase portions">
+              <img src="img/Plus.svg" alt="">
+            </button>
+          </div>
+        </section>
+
+        <section>
+          <h2>How many are cooking?</h2>
+          <div class="counter-row">
+            <button class="icon-button counter-button" type="button" (click)="decrease('cooksAmount')"
+              [disabled]="generator.requirements.cooksAmount <= 1" aria-label="Decrease cooks">
+              <img src="img/Minus.svg" alt="">
+            </button>
+            <span class="counter-value">{{ generator.requirements.cooksAmount }}</span>
+            <span>Person</span>
+            <button class="icon-button counter-button" type="button" (click)="increase('cooksAmount')"
+              [disabled]="generator.requirements.cooksAmount >= 3" aria-label="Increase cooks">
+              <img src="img/Plus.svg" alt="">
+            </button>
+          </div>
+        </section>
+      </div>
+
+      <section class="preference-card">
+        <div class="preference-group">
+          <h2><img src="img/Frame 750.svg" alt="">Cooking time:</h2>
+          <div class="time-options">
+            @for (time of store.cookingTimes; track time.value) {
+            <div class="time-option">
+              <button class="chip" type="button" [attr.aria-pressed]="generator.requirements.cookingTime === time.value"
+                [class.chip--selected]="generator.requirements.cookingTime === time.value"
+                (click)="choose('cookingTime', time.value)">
+                {{ time.label }}
+              </button>
+              <span class="time-hint">{{ time.hint }}</span>
+            </div>
+            }
+          </div>
+        </div>
+
+        <div class="preference-group">
+          <h2><img src="img/public.svg" alt="">Cuisine</h2>
+          <div class="chip-row">
+            @for (cuisine of store.cuisines; track cuisine.name) {
+            <button class="chip" type="button" [attr.aria-pressed]="generator.requirements.cuisine === cuisine.name"
+              [class.chip--selected]="generator.requirements.cuisine === cuisine.name"
+              (click)="choose('cuisine', cuisine.name)">
+              {{ cuisine.name | titlecase }}
+            </button>
+            }
+          </div>
+        </div>
+
+        <div class="preference-group">
+          <h2><img src="img/fork_spoon.svg" alt="">Diet preferences</h2>
+          <div class="chip-row">
+            @for (diet of store.dietPreferences; track diet) {
+            <button class="chip" type="button" [attr.aria-pressed]="generator.requirements.dietPreferences === diet"
+              [class.chip--selected]="generator.requirements.dietPreferences === diet"
+              (click)="choose('dietPreferences', diet)">
+              {{ diet === 'no preferences' ? 'No preferences' : (diet | titlecase) }}
+            </button>
+            }
+          </div>
+        </div>
+      </section>
+
+      @if (errorMessage) {
+      <p class="generation-error" role="alert">{{ errorMessage }}</p>
+      }
+
+      <button class="button button--primary generate-button" type="button" [disabled]="!generator.canGenerate()"
+        (click)="generateRecipes()">Generate a recipe</button>
+    </section>
+  </div>
+</main>
+
+
+@if (showQuantityPopup) {
+<div class="quantity-modal-backdrop" role="presentation" (click)="closeQuantityPopup()">
+  <section class="quantity-modal" role="dialog" aria-modal="true" aria-labelledby="quantity-modal-title"
+    (click)="$event.stopPropagation()">
+    <button class="quantity-modal__close" type="button" aria-label="Close" (click)="closeQuantityPopup()">×</button>
+    <h2 id="quantity-modal-title">Ups! Not quite enough...</h2>
+    <p>It looks like some ingredient quantities aren't sufficient for your selected servings. Please add or adjust
+      quantities and try again.</p>
+    <button class="quantity-modal__back" type="button" (click)="backToIngredients()">
+      <span>Go back to ingredients</span>
+      <img src="img/Arrow 18.svg" alt="">
+    </button>
+  </section>
+</div>
+}

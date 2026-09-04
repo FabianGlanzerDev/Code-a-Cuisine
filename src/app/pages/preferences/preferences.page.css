@@ -1,0 +1,341 @@
+.preferences-content {
+  display: flex;
+  width: 100%;
+  margin-top: 64px;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+  color: #10310b;
+}
+
+.preferences-content>h1 {
+  margin: 0;
+  color: #10310b;
+  font-family: var(--font-body);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 38px;
+}
+
+.counter-grid {
+  display: grid;
+  width: min(100%, 662px);
+  grid-template-columns: repeat(2, 263px);
+  justify-content: space-between;
+  gap: 0;
+  margin: 8px 0 0;
+}
+
+.counter-grid h2 {
+  margin: 0;
+  color: #10310b;
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.counter-row {
+  display: flex;
+  margin-top: 20px;
+  align-items: center;
+  gap: 8px;
+  color: #10310b;
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.counter-value {
+  padding: 0 4px;
+  background: var(--green-light);
+  color: #10310b;
+}
+
+.counter-button {
+  position: relative;
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  border-radius: 4px;
+  transition: background-color 100ms ease;
+}
+
+.counter-button::after {
+  position: absolute;
+  inset: -8px;
+  content: '';
+}
+
+.counter-button img {
+  width: 28px;
+  height: 28px;
+}
+
+.counter-button:hover:not(:disabled),
+.counter-button:focus-visible:not(:disabled) {
+  background: #e7ece7;
+}
+
+.counter-button:active:not(:disabled) {
+  background: #c4d0c4;
+}
+
+.preference-card {
+  display: flex;
+  width: min(100%, 662px);
+  padding: 32px 24px;
+  flex-direction: column;
+  gap: 40px;
+  border-radius: var(--radius-xl);
+  background: var(--green-light);
+}
+
+.preference-group h2 {
+  display: flex;
+  margin: 0;
+  align-items: center;
+  gap: 2px;
+  color: #10310b;
+  font-family: var(--font-body);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.preference-group h2 img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.chip-row,
+.time-options {
+  display: flex;
+  margin-top: 24px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.time-options {
+  align-items: flex-start;
+}
+
+.time-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.preferences-page .chip {
+  min-height: 32px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--cream-light);
+  color: #1e5515;
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 20px;
+  transition: background-color 100ms ease;
+}
+
+.preferences-page .chip:hover:not(.chip--selected),
+.preferences-page .chip:focus-visible:not(.chip--selected) {
+  background: var(--cream-primary);
+}
+
+.preferences-page .chip.chip--selected,
+.preferences-page .chip.chip--selected:hover {
+  background: var(--green-light);
+}
+
+.time-hint {
+  color: #1e5515;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.generate-button {
+  margin-bottom: 32px;
+  background: #396039;
+  color: #faf0e6;
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 20px;
+  transition: background-color 100ms ease;
+}
+
+.generate-button:hover:not(:disabled),
+.generate-button:focus-visible:not(:disabled) {
+  background: #008000;
+}
+
+.quota-status,
+.generation-error {
+  width: min(100%, 662px);
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  background: var(--green-light);
+  color: #396039;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.generation-error {
+  background: var(--cream-light);
+  color: var(--green-dark);
+  font-weight: 600;
+}
+
+.icon-button:disabled,
+.generate-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 767px) {
+  .preferences-content {
+    align-items: flex-start;
+    gap: 24px;
+    margin-top: 40px;
+  }
+
+  .counter-grid {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: 24px;
+    margin: 0;
+  }
+
+  .counter-grid>section {
+    width: 100%;
+  }
+
+  .counter-grid h2 {
+    white-space: normal;
+  }
+
+  .preference-card {
+    gap: 40px;
+  }
+
+  .generate-button {
+    align-self: center;
+  }
+}
+
+
+.quantity-modal-backdrop {
+  position: fixed;
+  z-index: 200;
+  inset: 0;
+  display: grid;
+  padding: 24px;
+  place-items: center;
+  background: rgb(12 33 8 / 40%);
+}
+
+.quantity-modal {
+  position: relative;
+  width: min(35.4375rem, 100%);
+  min-height: 21.5625rem;
+  padding: 3.5rem 4rem 3rem;
+  border-radius: 1.25rem;
+  background: var(--green-primary);
+  color: var(--cream-primary);
+  animation: quantity-modal-in 400ms linear both;
+}
+
+.quantity-modal h2 {
+  margin: 0 0 1.5rem;
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.quantity-modal p {
+  max-width: 28rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.quantity-modal__close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cream-primary);
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.quantity-modal__back {
+  display: inline-flex;
+  margin-top: 2.25rem;
+  padding: 0.75rem 1rem;
+  border: 0;
+  background: transparent;
+  align-items: center;
+  gap: 1rem;
+  color: var(--cream-primary);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.quantity-modal__back:hover,
+.quantity-modal__back:focus-visible {
+  background: rgb(250 240 230 / 14%);
+}
+
+.quantity-modal__back img {
+  width: 2rem;
+  filter: brightness(0) invert(1);
+}
+
+@keyframes quantity-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(1.25rem);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 639px) {
+  .quantity-modal {
+    min-height: 0;
+    padding: 3.5rem 1.5rem 2rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quantity-modal {
+    animation: none;
+  }
+}
