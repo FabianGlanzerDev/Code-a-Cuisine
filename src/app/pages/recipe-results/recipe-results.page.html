@@ -1,0 +1,53 @@
+<main class="results-page">
+  <div class="content content--cream">
+    <app-site-header [light]="true" [linked]="true" />
+
+    <section class="results-hero">
+      <div class="results-copy">
+        <h1 class="results-title results-title--desktop">The recipe results</h1>
+        <p>We took what you have and let our AI do the thinking.<br>Here are 3 easy recipes you can make right now!</p>
+
+        <div class="result-tags">
+          <span>{{ cuisine }}</span>
+          <span>{{ cookingTime }}</span>
+          @if (dietPreference && dietPreference !== 'no preferences') {
+          <span>{{ dietPreference }}</span>
+          }
+        </div>
+      </div>
+
+      <img class="results-image" src="img/recipe-done.webp" alt="Finished recipe">
+      <h1 class="results-title results-title--mobile">Generated Recipes</h1>
+    </section>
+
+    @if (store.generatedRecipes.length) {
+    <section class="result-grid" aria-label="Generated recipes">
+      @for (recipe of store.generatedRecipes; track recipe.id; let index = $index) {
+      <article class="recipe-card">
+        <div class="recipe-card__label">
+          <img src="img/icon.webp" alt="">
+          <span>Recipe {{ index + 1 }}</span>
+        </div>
+        <h2>{{ recipe.title }}</h2>
+        <div class="recipe-card__time">
+          <img src="img/Frame 750.svg" alt="">
+          <span>Cooking time: {{ recipe.cookingTime }}</span>
+        </div>
+        <a class="button button--white" [routerLink]="['/recipe-results', recipe.id]"
+          [queryParams]="{ from: 'results' }">View</a>
+      </article>
+      }
+    </section>
+    } @else {
+    <section class="results-empty" aria-live="polite">
+      <p>No generated recipe set is available in this browser yet.</p>
+      <a class="button button--white" routerLink="/generate-recipe">Generate recipes</a>
+    </section>
+    }
+
+    <a class="forward-link results-new" routerLink="/generate-recipe">
+      <span>Generate new recipe</span>
+      <img src="img/Arrow 18.svg" alt="">
+    </a>
+  </div>
+</main>
