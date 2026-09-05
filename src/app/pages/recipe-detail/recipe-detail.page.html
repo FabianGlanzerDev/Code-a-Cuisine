@@ -1,0 +1,189 @@
+<main class="page-shell recipe-detail-page">
+  <div class="content content--green">
+    <app-site-header [linked]="true" />
+
+    <a class="back-link back-link--button" routerLink="/recipe-results">
+      <img src="img/Arrow 11.svg" alt="">
+      <span class="back-link__desktop">Recipe Results</span>
+    </a>
+
+    @if (loading) {
+    <section class="detail-state" aria-live="polite">
+      <p>Loading recipe...</p>
+    </section>
+    }
+
+    @if (errorMessage) {
+    <section class="detail-state detail-state--error" role="alert">
+      <p>{{ errorMessage }}</p>
+      <a class="button button--primary" routerLink="/cookbook">Back to cookbook</a>
+    </section>
+    }
+
+    @if (recipe) {
+    <article class="detail-card">
+      <section class="detail-summary">
+        <div class="detail-title-block">
+          <div class="detail-time">
+            <img src="img/Frame 750.svg" alt="">
+            <span>Cooking time: {{ recipe.cookingTime }}</span>
+          </div>
+          <h1>{{ recipe.title }}</h1>
+
+          <div class="detail-cooks" aria-label="Cooking people">
+            <span>Cooking person: {{ recipe.cooksAmount }}</span>
+            <div class="detail-cook-badges">
+              @for (cook of cookNumbers; track cook) {
+              <span class="chef-badge chef-badge--summary" [class.chef-badge--2]="cook === 2"
+                [class.chef-badge--3]="cook === 3">
+                <img [src]="cook === 2 ? 'img/chef2.svg' : cook === 3 ? 'img/chef3.svg' : 'img/chef1.svg'" alt="">
+                <span>Chef {{ cook }}</span>
+              </span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-meta">
+          <div class="detail-tags">
+            @if (recipe.preferences.dietPreferences !== 'no preferences') {
+            <span>{{ recipe.preferences.dietPreferences }}</span>
+            }
+            <span>{{ recipe.preferences.cookingTime }}</span>
+            <span><img src="img/favorite.svg" alt="">{{ recipe.likes }}</span>
+          </div>
+
+          <section class="nutrition" aria-labelledby="nutrition-title">
+            <h2 id="nutrition-title">Nutritional information</h2>
+            @if (recipe.nutritionalInformation.perPortion; as portion) {
+            <div class="nutrition-group">
+              <h3>Per portion</h3>
+              <div class="nutrition-table">
+                <p><strong>Energy</strong><span>{{ portion.calories }}</span></p>
+                <p><strong>Protein</strong><span>{{ portion.proteins }} <small>{{ portion.proteinsPercent
+                      }}</small></span></p>
+                <p><strong>Fat</strong><span>{{ portion.fats }} <small>{{ portion.fatsPercent }}</small></span></p>
+                <p><strong>Carbs</strong><span>{{ portion.carbs }} <small>{{ portion.carbsPercent }}</small></span></p>
+              </div>
+            </div>
+            @if (recipe.nutritionalInformation.total; as total) {
+            <div class="nutrition-group nutrition-group--total">
+              <h3>Total recipe</h3>
+              <div class="nutrition-table">
+                <p><strong>Energy</strong><span>{{ total.calories }}</span></p>
+                <p><strong>Protein</strong><span>{{ total.proteins }} <small>{{ total.proteinsPercent }}</small></span>
+                </p>
+                <p><strong>Fat</strong><span>{{ total.fats }} <small>{{ total.fatsPercent }}</small></span></p>
+                <p><strong>Carbs</strong><span>{{ total.carbs }} <small>{{ total.carbsPercent }}</small></span></p>
+              </div>
+            </div>
+            }
+            } @else {
+            <div class="nutrition-table">
+              <p><strong>Energy</strong><span>{{ recipe.nutritionalInformation.calories }}</span></p>
+              <p><strong>Protein</strong><span>{{ recipe.nutritionalInformation.proteins }}</span></p>
+              <p><strong>Fat</strong><span>{{ recipe.nutritionalInformation.fats }}</span></p>
+              <p><strong>Carbs</strong><span>{{ recipe.nutritionalInformation.carbs }}</span></p>
+            </div>
+            }
+          </section>
+        </div>
+      </section>
+
+      <section class="ingredient-section">
+        <div class="section-visual">
+          <img src="img/Hero Directions.png" alt="Ingredient illustration">
+          <h2>Ingredients</h2>
+        </div>
+
+        <div class="ingredient-columns">
+          <section>
+            <h3>Your ingredients</h3>
+            <ul>
+              @for (ingredient of recipe.ingredients.yourIngredients; track ingredient.ingredient) {
+              <li><span>{{ ingredient.servingSize }}</span>{{ ingredient.ingredient }}</li>
+              }
+            </ul>
+          </section>
+
+          <section>
+            <h3>Extra ingredients</h3>
+            <ul>
+              @for (ingredient of recipe.ingredients.extraIngredients; track ingredient.ingredient) {
+              <li><span>{{ ingredient.servingSize }}</span>{{ ingredient.ingredient }}</li>
+              }
+            </ul>
+          </section>
+        </div>
+      </section>
+
+      <section class="directions-section">
+        <img class="directions-visual" src="img/Hero for silgle recipe view.png" alt="Cooking directions illustration">
+        <div class="directions-grid">
+          @for (direction of recipe.directions; track direction.order; let index = $index) {
+          <article class="direction-card">
+            <header>
+              <h3><span>{{ index + 1 }}.</span>{{ direction.title }}</h3>
+              <div class="chef-badge" [class.chef-badge--2]="direction.cook === 2"
+                [class.chef-badge--3]="direction.cook === 3">
+                <img
+                  [src]="direction.cook === 2 ? 'img/chef2.svg' : direction.cook === 3 ? 'img/chef3.svg' : 'img/chef1.svg'"
+                  alt="">
+                <span>Chef {{ direction.cook }}</span>
+              </div>
+            </header>
+            @if (direction.parallel || direction.timingNote) {
+            <p class="direction-note">
+              @if (direction.parallel) { <strong>Parallel step.</strong> }
+              {{ direction.timingNote }}
+            </p>
+            }
+            <p>{{ direction.description }}</p>
+          </article>
+          }
+        </div>
+      </section>
+
+      @if (recipe.cooksAmount > 1) {
+      <section class="task-split" aria-labelledby="task-split-title">
+        <h2 id="task-split-title">Task split</h2>
+        <div class="task-split__grid">
+          @for (cook of cookNumbers; track cook) {
+          <section>
+            <h3>Chef {{ cook }}</h3>
+            <ol>
+              @for (direction of directionsForCook(cook); track direction.order) {
+              <li>{{ direction.title }}</li>
+              }
+            </ol>
+          </section>
+          }
+        </div>
+      </section>
+      }
+
+      <div class="finished-prompt">
+        <p><strong>Just finished this meal?</strong> Give it a heart, so that the others know this is delicious</p>
+        <button class="heart-action" type="button" [class.heart-action--liked]="likedByThisBrowser"
+          [disabled]="likePending" [attr.aria-pressed]="likedByThisBrowser" (click)="toggleLike()"
+          aria-label="Give this recipe a heart">
+          <img [src]="likedByThisBrowser ? 'img/favorite-filled.svg' : 'img/favorite.svg'" alt="">
+        </button>
+      </div>
+      @if (likeError) {
+      <p class="like-error" role="status">{{ likeError }}</p>
+      }
+    </article>
+    }
+
+    <footer class="detail-footer">
+      <span>Find inspiration for your next culinary adventure!</span>
+      <a class="button button--primary" routerLink="/cookbook">Cookbook</a>
+    </footer>
+
+    <a class="forward-link detail-new" routerLink="/generate-recipe">
+      <span>Generate new recipe</span>
+      <img src="img/Arrow 11.svg" class="mirror" alt="">
+    </a>
+  </div>
+</main>
