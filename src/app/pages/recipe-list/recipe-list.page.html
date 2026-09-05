@@ -1,0 +1,68 @@
+<main class="page-shell recipe-list-page">
+  <div class="content content--green">
+    <app-site-header [linked]="true" />
+
+    <div class="recipe-list-nav">
+      <a class="back-link" routerLink="/cookbook">
+        <img src="img/Arrow 11.svg" alt="">
+        <span class="back-link__desktop">Cookbook</span>
+      </a>
+      <a class="button button--primary recipe-list-generate" routerLink="/generate-recipe">Generate a Recipe</a>
+    </div>
+
+    @if (cuisine) {
+    <h1 class="sr-only">{{ cuisine.name }} recipes</h1>
+    <img class="cuisine-header" [src]="cuisine.headerImage" [alt]="cuisine.name + ' cuisine'">
+    }
+
+    @if (loading) {
+    <section class="recipe-list-state" aria-live="polite">
+      <p>Loading recipes...</p>
+    </section>
+    } @else if (errorMessage) {
+    <section class="recipe-list-state" role="alert">
+      <p>{{ errorMessage }}</p>
+    </section>
+    } @else if (!store.selectedRecipes.length) {
+    <section class="recipe-list-state" aria-live="polite">
+      <p>No recipes have been generated for this cuisine yet.</p>
+      <a class="button button--primary" routerLink="/generate-recipe">Generate a recipe</a>
+    </section>
+    }
+
+    <section class="recipe-list" aria-label="Recipes">
+      @for (recipe of pageRecipes; track recipe.id; let index = $index) {
+      <a class="recipe-row" [routerLink]="['/recipe-results', recipe.id]"
+        [queryParams]="{ from: 'cookbook', cuisine: cuisine?.name }">
+        <div class="recipe-row__title">
+          <span class="recipe-number">{{ (currentPage - 1) * pageSize + index + 1 }}.</span>
+          <div>
+            <p><img src="img/Frame 750.svg" alt="">Cooking time: {{ recipe.cookingTime }}</p>
+            <h2 class="recipe-row__desktop-title">{{ recipe.title }}</h2>
+          </div>
+        </div>
+
+        <h2 class="recipe-row__mobile-title">{{ recipe.title }}</h2>
+
+        <div class="recipe-row__tags">
+          @if (recipe.preferences.dietPreferences.toLowerCase() !== 'no preferences') {
+          <span>{{ recipe.preferences.dietPreferences }}</span>
+          }
+          <span>{{ recipe.preferences.cookingTime }}</span>
+          <span><img src="img/favorite.svg" alt="">{{ recipe.likes }}</span>
+        </div>
+      </a>
+      }
+    </section>
+
+    @if (totalPages > 1) {
+    <nav class="pagination" aria-label="Recipe pages">
+      <button class="button button--white" type="button" [disabled]="currentPage === 1"
+        (click)="previousPage()">Previous</button>
+      <span>Page {{ currentPage }} of {{ totalPages }}</span>
+      <button class="button button--white" type="button" [disabled]="currentPage === totalPages"
+        (click)="nextPage()">Next</button>
+    </nav>
+    }
+  </div>
+</main>
