@@ -1,0 +1,52 @@
+<main class="page-shell cookbook-page">
+  <div class="content content--green">
+    <app-site-header [linked]="true" />
+
+    <a class="back-link cookbook-back" routerLink="/">
+      <img src="img/Arrow 11.svg" alt="">
+      <span>Back</span>
+    </a>
+
+    <section class="cookbook-hero">
+      <div class="cookbook-intro">
+        <h1>Cookbook</h1>
+        <p>From quick bites to gourmet delights, explore them all in our ultimate cookbook and get inspired for your
+          next culinary adventure.</p>
+      </div>
+
+      <div class="liked-recipes">
+        <h2>Most liked recipes <img src="img/favorite-most-liked.svg" alt="Heart"></h2>
+        <div #likedScroller class="liked-recipes__scroller" (pointerdown)="startLikedDrag($event, likedScroller)"
+          (pointermove)="moveLikedDrag($event, likedScroller)" (pointerup)="endLikedDrag($event, likedScroller)"
+          (pointercancel)="endLikedDrag($event, likedScroller)">
+          @for (recipe of store.currentRecipes; track recipe.id) {
+          <a class="liked-card" [routerLink]="['/recipe-results', recipe.id]" draggable="false"
+            (dragstart)="$event.preventDefault()" (click)="handleLikedCardClick($event)">
+            <div>
+              <p><img src="img/Frame 750.svg" alt="">Cooking time: {{ recipe.cookingTime }}</p>
+              <h3>{{ recipe.title }}</h3>
+            </div>
+            <span class="like-chip"><img src="img/favorite-most-liked.svg" alt="">{{ recipe.likes }}</span>
+          </a>
+          }
+        </div>
+      </div>
+    </section>
+
+    <section class="cuisine-grid" aria-label="Cuisine categories">
+      @for (cuisine of cookbookCuisines; track cuisine.name) {
+      <a [routerLink]="['/recipes-list']" [queryParams]="{ cuisine: cuisine.name }">
+        <figure>
+          <figcaption>{{ cuisine.name }} cuisine {{ cuisine.emoji }}</figcaption>
+          <img [src]="cuisine.thumbnailImage" [alt]="cuisine.name + ' cuisine'">
+        </figure>
+      </a>
+      }
+    </section>
+
+    <a class="forward-link cookbook-new" routerLink="/generate-recipe">
+      Generate new Recipe
+      <img class="mirror" src="img/Arrow 11.svg" alt="">
+    </a>
+  </div>
+</main>
