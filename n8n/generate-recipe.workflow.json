@@ -1,0 +1,893 @@
+{
+  "name": "Code a Cuisine - Generate Recipe",
+  "nodes": [
+    {
+      "id": "webhook-in",
+      "name": "Recipe Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1240,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-recipe",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "notes": "Receives the validated Angular generation payload.",
+      "notesInFlow": true
+    },
+    {
+      "id": "validate-request",
+      "name": "Validate Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1020,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst request = item.body ?? {};\nconst headers = item.headers ?? {};\nconst allowedTimes = ['quick', 'medium', 'complex'];\nconst allowedCuisines = ['german', 'italian', 'japanese', 'indian', 'gourmet', 'fusion'];\nconst allowedDiets = ['vegetarian', 'vegan', 'keto', 'no preferences'];\nconst errors = [];\nfunction getClientIp(sourceHeaders) {\n  const forwarded = sourceHeaders['cf-connecting-ip'] || sourceHeaders['x-real-ip'] || sourceHeaders['x-forwarded-for'] || '';\n  const candidate = String(forwarded).split(',')[0].trim().replace(/^\\[|\\]$/g, '');\n  return isIpAddress(candidate) ? candidate : 'unknown';\n}\nfunction isIpAddress(value) { return isIpv4(value) || isIpv6(value); }\nfunction isIpv4(value) {\n  const parts = value.split('.');\n  return parts.length === 4 && parts.every((part) => /^\\d{1,3}$/.test(part) && Number(part) <= 255);\n}\nfunction isIpv6(value) {\n  if (!value.includes(':') || !/^[0-9a-f:]+$/i.test(value)) return false;\n  if ((value.match(/::/g) || []).length > 1) return false;\n  const parts = value.split(':');\n  const filled = parts.filter(Boolean);\n  if (filled.some((part) => part.length > 4)) return false;\n  return value.includes('::') ? filled.length <= 7 : filled.length === 8;\n}\nfunction validateIngredient(entry) {\n  const name = String(entry?.ingredient ?? '').trim();\n  const servingSize = String(entry?.servingSize ?? '').trim();\n  if (!name || name.length > 80) return false;\n  if (!servingSize || servingSize.length > 30) return false;\n  return /^[\\p{L}\\p{N} .,'’()\\-/]+$/u.test(name);\n}\nconst ingredients = Array.isArray(request.ingredients) ? request.ingredients : [];\nif (ingredients.length < 1 || ingredients.length > 30) errors.push('Please provide between 1 and 30 ingredients.');\nif (ingredients.some((entry) => !validateIngredient(entry))) errors.push('Every ingredient needs a valid name and amount.');\nif (!Number.isInteger(request.portionsAmount) || request.portionsAmount < 1 || request.portionsAmount > 12) errors.push('Portions must be between 1 and 12.');\nif (!Number.isInteger(request.cooksAmount) || request.cooksAmount < 1 || request.cooksAmount > 3) errors.push('Cooks must be between 1 and 3.');\nif (!allowedTimes.includes(request.cookingTime)) errors.push('Invalid cooking time.');\nif (!allowedCuisines.includes(request.cuisine)) errors.push('Invalid cuisine.');\nif (!allowedDiets.includes(request.dietPreferences)) errors.push('Invalid diet preference.');\nconst ip = getClientIp(headers);\nconst dayKey = new Date().toISOString().slice(0, 10);\nreturn [{ json: { request, ip, dayKey, valid: errors.length === 0, errors, systemKey: `system:${dayKey}`, ipKey: `ip:${dayKey}:${ip}`, rateKey: `rate:${ip}` } }];"
+      },
+      "notes": "Validates ingredients, portions, cooks, time, cuisine and diet before any AI call.",
+      "notesInFlow": true
+    },
+    {
+      "id": "request-valid",
+      "name": "Request Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -800,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Stops invalid requests before quota or AI usage.",
+      "notesInFlow": true
+    },
+    {
+      "id": "invalid-response",
+      "name": "Return Validation Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        -560,
+        180
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ detail: $json.errors.join(' '), quota: null }) }}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "notes": "Returns a clear 400 validation message to Angular.",
+      "notesInFlow": true
+    },
+    {
+      "id": "system-read",
+      "name": "Read System Quota",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -560,
+        -80
+      ],
+      "alwaysOutputData": true,
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "SET_QUOTA_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "quotaKey",
+              "keyValue": "={{ $json.systemKey }}"
+            }
+          ]
+        },
+      "returnAll": true
+    },
+    "alwaysOutputData": true,
+      "notes": "Reads the shared daily generation count.",
+      "notesInFlow": true
+    },
+    {
+      "id": "system-normalize",
+      "name": "Normalize System Quota",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -340,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst context = $('Validate Request').first().json;\nconst systemUsed = Number(row.quota || 0);\nreturn [{ json: { ...context, systemUsed } }];"
+      },
+      "notes": "Normalizes an empty or existing system quota row.",
+      "notesInFlow": true
+    },
+    {
+      "id": "ip-read",
+      "name": "Read IP Quota",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -120,
+        -80
+      ],
+      "alwaysOutputData": true,
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "SET_QUOTA_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "quotaKey",
+              "keyValue": "={{ $json.ipKey }}"
+            }
+          ]
+        },
+      "returnAll": true
+    },
+    "alwaysOutputData": true,
+      "notes": "Reads the daily quota for the caller IP.",
+      "notesInFlow": true
+    },
+    {
+      "id": "quota-normalize",
+      "name": "Normalize Quotas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        100,
+        -80
+      ],
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst context = $('Normalize System Quota').first().json;\nconst ipUsed = Number(row.quota || 0);\nconst requestCost = 1;\nconst quota = {\n  ipLimit: 3, ipUsed, ipRemaining: Math.max(0, 3 - ipUsed),\n  systemLimit: 12, systemUsed: context.systemUsed,\n  systemRemaining: Math.max(0, 12 - context.systemUsed),\n};\nreturn [{ json: { ...context, ipUsed, requestCost, quota } }];"
+      },
+      "notes": "Builds current remaining IP and system quota values.",
+      "notesInFlow": true
+    },
+    {
+      "id": "quota-check",
+      "name": "Quota Available?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        320,
+        -80
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ipUsed + $json.requestCost }}",
+              "rightValue": 3,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            },
+            {
+              "leftValue": "={{ $json.systemUsed + $json.requestCost }}",
+              "rightValue": 12,
+              "operator": {
+                "type": "number",
+                "operation": "lte"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Allows one three-recipe generation only while it stays within 3 recipes/IP/day and 12 recipes/system/day.",
+      "notesInFlow": true
+    },
+    {
+      "id": "quota-limit-response",
+      "name": "Return Quota Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        540,
+        100
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ detail: 'Daily recipe quota exceeded. Please try again tomorrow.', quota: $json.quota }) }}",
+        "options": {
+          "responseCode": 429
+        }
+      },
+      "notes": "Returns a 429 response including remaining quota.",
+      "notesInFlow": true
+    },
+    {
+      "id": "quota-increment",
+      "name": "Increment Quotas",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2100,
+        -320
+      ],
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst ipUsed = data.ipUsed + data.requestCost;\nconst systemUsed = data.systemUsed + data.requestCost;\nconst quota = { ipLimit: 3, ipUsed, ipRemaining: Math.max(0, 3 - ipUsed), systemLimit: 12, systemUsed, systemRemaining: Math.max(0, 12 - systemUsed) };\nreturn [{ json: { ...data, ipUsed, systemUsed, quota } }];"
+      },
+      "notes": "Reserves three recipe slots because every successful generation returns exactly three recipes.",
+      "notesInFlow": true
+    },
+    {
+      "id": "system-write",
+      "name": "Store System Quota",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2320,
+        -320
+      ],
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "SET_QUOTA_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "quotaKey",
+              "keyValue": "={{ $json.systemKey }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "quotaKey": "={{ $json.systemKey }}",
+            "quota": "={{ $json.systemUsed }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "quotaKey",
+              "displayName": "quotaKey",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "quota",
+              "displayName": "quota",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            }
+          ]
+        }
+      },
+      "notes": "Persists the shared daily quota count.",
+      "notesInFlow": true
+    },
+    {
+      "id": "ip-write",
+      "name": "Store IP Quota",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        2540,
+        -320
+      ],
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "SET_QUOTA_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "quotaKey",
+              "keyValue": "={{ $('Increment Quotas').item.json.ipKey }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "quotaKey": "={{ $('Increment Quotas').item.json.ipKey }}",
+            "quota": "={{ $('Increment Quotas').item.json.ipUsed }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "quotaKey",
+              "displayName": "quotaKey",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "quota",
+              "displayName": "quota",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            }
+          ]
+        }
+      },
+      "notes": "Persists the caller IP daily quota count.",
+      "notesInFlow": true
+    },
+    {
+      "id": "ai-agent",
+      "name": "Create Three Recipes",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1420,
+        -240
+      ],
+      "parameters": {
+        "promptType": "define",
+        "text": "=Create exactly THREE different recipes from this validated request:\n{{ JSON.stringify($('Validate Request').item.json.request) }}\n\nMandatory rules:\n- Return ONLY a JSON array with exactly 3 complete recipe objects. Do not use markdown fences.\n- Use at least 70% of the supplied ingredient NAMES in every recipe. Copy those names exactly into ingredients.yourIngredients.\n- Add at most 3 missing/basic ingredients under ingredients.extraIngredients and make them clearly separate.\n- Respect portionsAmount exactly and scale every ingredient amount to that portion count.\n- cookingTime mapping: quick = up to 20 minutes, medium = 20–45 minutes, complex = 45+ minutes.\n- Respect cuisine and dietPreferences semantically; do not include ingredients that violate the selected diet and do not add fake or nonsensical ingredient names.\n- Respect cooksAmount (1–3). Every cook must receive at least one direction step.\n- Directions must use consecutive order values starting at 1, be chronological, beginner-friendly and workflow-optimized. Use waiting time for useful parallel preparation.\n- For parallel work set direction.parallel=true; otherwise false. Put a short waiting/parallel hint in timingNote when useful.\n- Nutrition must include per-portion AND total-recipe values. Calories must use kcal. Protein, fat and carbs must use grams and their percentage fields must use %.\n\nRequired shape per recipe:\n{\n  \"title\": \"string\",\n  \"cookingTime\": \"string\",\n  \"portionsAmount\": number,\n  \"nutritionalInformation\": {\n    \"perPortion\": {\n      \"calories\": \"string\",\n      \"proteins\": \"string in g\",\n      \"proteinsPercent\": \"string in %\",\n      \"fats\": \"string in g\",\n      \"fatsPercent\": \"string in %\",\n      \"carbs\": \"string in g\",\n      \"carbsPercent\": \"string in %\"\n    },\n    \"total\": {\n      \"calories\": \"string\",\n      \"proteins\": \"string in g\",\n      \"proteinsPercent\": \"string in %\",\n      \"fats\": \"string in g\",\n      \"fatsPercent\": \"string in %\",\n      \"carbs\": \"string in g\",\n      \"carbsPercent\": \"string in %\"\n    }\n  },\n  \"preferences\": {\n    \"cookingTime\": \"quick|medium|complex\",\n    \"cuisine\": \"selected cuisine\",\n    \"dietPreferences\": \"selected diet\"\n  },\n  \"cooksAmount\": number,\n  \"ingredients\": {\n    \"yourIngredients\": [{ \"ingredient\": \"exact supplied name\", \"servingSize\": \"scaled amount\" }],\n    \"extraIngredients\": [{ \"ingredient\": \"name\", \"servingSize\": \"amount\" }]\n  },\n  \"directions\": [{\n    \"order\": number,\n    \"title\": \"string\",\n    \"description\": \"string\",\n    \"cook\": number,\n    \"parallel\": boolean,\n    \"timingNote\": \"string\"\n  }]\n}"
+      },
+      "notes": "Creates exactly three recipes under the checklist constraints.",
+      "notesInFlow": true
+    },
+    {
+      "id": "gemini-model",
+      "name": "Gemini Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1420,
+        40
+      ],
+      "parameters": {
+        "options": {}
+      },
+      "notes": "Language model credential must be configured locally in n8n.",
+      "notesInFlow": true
+    },
+    {
+      "id": "validate-output",
+      "name": "Validate Recipe Output",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1660,
+        -240
+      ],
+      "parameters": {
+        "jsCode": "const context = $('Normalize Rate Limit').first().json;\nconst raw = String($input.first().json.output || '');\nconst cleaned = raw.replace(/```json|```/gi, '').trim();\nfunction parseNumber(value) { const match = String(value ?? '').replace(',', '.').match(/-?\\d+(?:\\.\\d+)?/); return match ? Number(match[0]) : NaN; }\nfunction hasUnit(value, unit) { return Number.isFinite(parseNumber(value)) && String(value).toLowerCase().includes(unit); }\nfunction hasValidTitle(title) {\n  const value = String(title ?? '').trim();\n  if (value.length < 5 || value.length > 120 || value.split(/\\s+/).length < 2) return false;\n  if (/\\b(test\\d*|recipe\\s*xyz|lorem|placeholder|untitled)\\b/i.test(value)) return false;\n  return /[a-zà-ž]/i.test(value);\n}\nfunction cookingTimeMatches(value, category) {\n  const minutes = parseNumber(value);\n  if (!Number.isFinite(minutes) || minutes <= 0) return false;\n  if (category === 'quick') return minutes <= 20;\n  if (category === 'medium') return minutes >= 20 && minutes <= 45;\n  return minutes >= 45;\n}\nfunction validateNutrition(snapshot) {\n  if (!snapshot) return false;\n  if (!hasUnit(snapshot.calories, 'kcal')) return false;\n  if (!hasUnit(snapshot.proteins, 'g') || !hasUnit(snapshot.fats, 'g') || !hasUnit(snapshot.carbs, 'g')) return false;\n  return hasUnit(snapshot.proteinsPercent, '%') && hasUnit(snapshot.fatsPercent, '%') && hasUnit(snapshot.carbsPercent, '%');\n}\nfunction validateIngredients(recipe, requested, requiredCount) {\n  const own = recipe.ingredients?.yourIngredients;\n  const extras = recipe.ingredients?.extraIngredients;\n  if (!Array.isArray(own) || !Array.isArray(extras) || extras.length > 3) return false;\n  if ([...own, ...extras].some((entry) => !String(entry?.ingredient ?? '').trim() || !String(entry?.servingSize ?? '').trim())) return false;\n  const used = new Set(own.map((entry) => String(entry.ingredient).trim().toLowerCase()));\n  const matched = requested.filter((name) => used.has(name)).length;\n  return matched >= requiredCount;\n}\nfunction validateDirections(recipe, cooksAmount) {\n  const directions = recipe.directions;\n  if (!Array.isArray(directions) || directions.length < cooksAmount) return false;\n  const orders = directions.map((step) => Number(step.order));\n  if (orders.some((order) => !Number.isInteger(order) || order < 1)) return false;\n  if (new Set(orders).size !== orders.length) return false;\n  const sorted = [...orders].sort((a, b) => a - b);\n  if (sorted.some((order, index) => order !== index + 1)) return false;\n  if (directions.some((step) => !String(step.title ?? '').trim() || !String(step.description ?? '').trim())) return false;\n  if (directions.some((step) => Number(step.cook) < 1 || Number(step.cook) > cooksAmount)) return false;\n  const assignedCooks = new Set(directions.map((step) => Number(step.cook)));\n  for (let cook = 1; cook <= cooksAmount; cook += 1) if (!assignedCooks.has(cook)) return false;\n  return cooksAmount === 1 || directions.some((step) => step.parallel === true);\n}\ntry {\n  const recipes = JSON.parse(cleaned);\n  if (!Array.isArray(recipes) || recipes.length !== 3) throw new Error('Exactly three recipes are required.');\n  const titles = recipes.map((recipe) => String(recipe.title || '').trim().toLowerCase());\n  if (new Set(titles).size !== 3 || recipes.some((recipe) => !hasValidTitle(recipe.title))) throw new Error('Recipe titles are invalid or not unique.');\n  const requested = context.request.ingredients.map((entry) => String(entry.ingredient).trim().toLowerCase());\n  const requiredCount = Math.ceil(requested.length * 0.7);\n  for (const recipe of recipes) {\n    if (!validateIngredients(recipe, requested, requiredCount)) throw new Error('Ingredient coverage or extra ingredients are invalid.');\n    if (recipe.portionsAmount !== context.request.portionsAmount) throw new Error('Portion scaling is invalid.');\n    if (recipe.cooksAmount !== context.request.cooksAmount) throw new Error('Cook count does not match the request.');\n    if (recipe.preferences?.cuisine !== context.request.cuisine) throw new Error('Cuisine does not match the request.');\n    if (recipe.preferences?.dietPreferences !== context.request.dietPreferences) throw new Error('Diet does not match the request.');\n    if (recipe.preferences?.cookingTime !== context.request.cookingTime) throw new Error('Cooking time category does not match the request.');\n    if (!cookingTimeMatches(recipe.cookingTime, context.request.cookingTime)) throw new Error('Cooking time is outside the selected range.');\n    if (!validateNutrition(recipe.nutritionalInformation?.perPortion) || !validateNutrition(recipe.nutritionalInformation?.total)) throw new Error('Nutrition data is incomplete or uses invalid units.');\n    if (!validateDirections(recipe, context.request.cooksAmount)) throw new Error('Directions or task split are incomplete.');\n  }\n  return [{ json: { ...context, valid: true, recipes } }];\n} catch (error) {\n  return [{ json: { ...context, valid: false, detail: error instanceof Error ? error.message : 'Invalid recipe output.', quota: context.quota } }];\n}"
+      },
+      "notes": "Validates three unique recipes, 70% ingredients, max 3 extras, preference fidelity, full nutrition and cook split.",
+      "notesInFlow": true
+    },
+    {
+      "id": "output-valid",
+      "name": "Recipe Output Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1880,
+        -240
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Routes valid AI output to success and invalid output to a controlled error.",
+      "notesInFlow": true
+    },
+    {
+      "id": "success-response",
+      "name": "Return Recipes and Quota",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2760,
+        -380
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ recipes: $('Increment Quotas').first().json.recipes, quota: $('Increment Quotas').first().json.quota }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "notes": "Returns generated recipes and quota metadata to Angular.",
+      "notesInFlow": true
+    },
+    {
+      "id": "output-error-response",
+      "name": "Return Recipe Validation Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2100,
+        -80
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ detail: $json.detail, quota: $json.quota }) }}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "notes": "Returns a controlled backend-output validation error.",
+      "notesInFlow": true
+    },
+    {
+      "id": "rate-read",
+      "name": "Read Rate Limit",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        540,
+        -160
+      ],
+      "alwaysOutputData": true,
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "SET_QUOTA_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "quotaKey",
+              "keyValue": "={{ $json.rateKey }}"
+            }
+          ]
+        },
+      "returnAll": true
+    },
+    "alwaysOutputData": true,
+      "notes": "Reads the last accepted request timestamp for short-term throttling.",
+      "notesInFlow": true
+    },
+    {
+      "id": "rate-normalize",
+      "name": "Normalize Rate Limit",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        -160
+      ],
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst context = $('Normalize Quotas').first().json;\nconst now = Date.now();\nconst lastRequest = Number(row.quota || 0);\nconst rateAllowed = !lastRequest || now - lastRequest >= 10000;\nreturn [{ json: { ...context, now, lastRequest, rateAllowed } }];"
+      },
+      "notes": "Allows at most one generation attempt per IP every 10 seconds.",
+      "notesInFlow": true
+    },
+    {
+      "id": "rate-check",
+      "name": "Rate Limit Available?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        980,
+        -160
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.rateAllowed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "notes": "Blocks rapid repeated calls before they can reach the AI model.",
+      "notesInFlow": true
+    },
+    {
+      "id": "rate-error",
+      "name": "Return Rate Limit Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1200,
+        20
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ detail: 'Too many requests. Please wait a few seconds and try again.', quota: $json.quota }) }}",
+        "options": {
+          "responseCode": 429
+        }
+      },
+      "notes": "Returns a clear 429 response for short-term throttling.",
+      "notesInFlow": true
+    },
+    {
+      "id": "rate-write",
+      "name": "Store Rate Limit Timestamp",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        -240
+      ],
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "SET_QUOTA_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "quotaKey",
+              "keyValue": "={{ $json.rateKey }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "quotaKey": "={{ $json.rateKey }}",
+            "quota": "={{ $json.now }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "quotaKey",
+              "displayName": "quotaKey",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "quota",
+              "displayName": "quota",
+              "type": "number",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            }
+          ]
+        }
+      },
+      "notes": "Stores the timestamp of the accepted request for the 10-second throttle.",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "Recipe Request": {
+      "main": [
+        [
+          {
+            "node": "Validate Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Request": {
+      "main": [
+        [
+          {
+            "node": "Request Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Request Valid?": {
+      "main": [
+        [
+          {
+            "node": "Read System Quota",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read System Quota": {
+      "main": [
+        [
+          {
+            "node": "Normalize System Quota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize System Quota": {
+      "main": [
+        [
+          {
+            "node": "Read IP Quota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read IP Quota": {
+      "main": [
+        [
+          {
+            "node": "Normalize Quotas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Quotas": {
+      "main": [
+        [
+          {
+            "node": "Quota Available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Quota Available?": {
+      "main": [
+        [
+          {
+            "node": "Read Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Quota Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Increment Quotas": {
+      "main": [
+        [
+          {
+            "node": "Store System Quota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store System Quota": {
+      "main": [
+        [
+          {
+            "node": "Store IP Quota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store IP Quota": {
+      "main": [
+        [
+          {
+            "node": "Return Recipes and Quota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Create Three Recipes",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Three Recipes": {
+      "main": [
+        [
+          {
+            "node": "Validate Recipe Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Recipe Output": {
+      "main": [
+        [
+          {
+            "node": "Recipe Output Valid?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Recipe Output Valid?": {
+      "main": [
+        [
+          {
+            "node": "Increment Quotas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Recipe Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Normalize Rate Limit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Rate Limit": {
+      "main": [
+        [
+          {
+            "node": "Rate Limit Available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Rate Limit Available?": {
+      "main": [
+        [
+          {
+            "node": "Store Rate Limit Timestamp",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Rate Limit Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Rate Limit Timestamp": {
+      "main": [
+        [
+          {
+            "node": "Create Three Recipes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
