@@ -1,0 +1,181 @@
+{
+  "name": "Code a Cuisine - Error Logger",
+  "nodes": [
+    {
+      "id": "error-trigger",
+      "name": "Workflow Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        0
+      ],
+      "parameters": {},
+      "notes": "Starts when an assigned Code a Cuisine workflow fails.",
+      "notesInFlow": true
+    },
+    {
+      "id": "error-record",
+      "name": "Build Error Log",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -180,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const error = $input.first().json;\nconst timestamp = new Date().toISOString();\nconst workflow = String(error.workflow?.name || 'unknown');\nconst execution = String(error.execution?.id || 'unknown');\nconst message = String(error.execution?.error?.message || error.message || 'Unknown error');\nreturn [{ json: { logKey: `${timestamp}:${execution}`, timestamp, workflow, execution, message } }];"
+      },
+      "notes": "Normalizes execution error metadata for logging.",
+      "notesInFlow": true
+    },
+    {
+      "id": "error-table",
+      "name": "Store Error Log",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        40,
+        0
+      ],
+      "parameters": {
+        "operation": "upsert",
+        "dataTableId": {
+          "__rl": true,
+          "value": "SET_ERROR_LOG_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "logKey",
+              "keyValue": "={{ $json.logKey }}"
+            }
+          ]
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "logKey": "={{ $json.logKey }}",
+            "timestamp": "={{ $json.timestamp }}",
+            "workflow": "={{ $json.workflow }}",
+            "execution": "={{ $json.execution }}",
+            "message": "={{ $json.message }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "logKey",
+              "displayName": "logKey",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "timestamp",
+              "displayName": "timestamp",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "workflow",
+              "displayName": "workflow",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "execution",
+              "displayName": "execution",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            },
+            {
+              "id": "message",
+              "displayName": "message",
+              "type": "string",
+              "display": true,
+              "required": false,
+              "readOnly": false,
+              "removed": false
+            }
+          ]
+        }
+      },
+      "notes": "Writes the error record to an n8n Data Table.",
+      "notesInFlow": true
+    },
+    {
+      "id": "error-email",
+      "name": "Send Error Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        260,
+        0
+      ],
+      "parameters": {
+        "fromEmail": "SET_SENDER_EMAIL",
+        "toEmail": "SET_ALERT_EMAIL",
+        "subject": "=Code a Cuisine n8n error: {{ $json.workflow }}",
+        "emailFormat": "text",
+        "text": "=Workflow: {{ $json.workflow }}\\nExecution: {{ $json.execution }}\\nTime: {{ $json.timestamp }}\\nError: {{ $json.message }}",
+        "options": {}
+      },
+      "notes": "Sends an optional SMTP alert after logging the workflow failure.",
+      "notesInFlow": true,
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "Workflow Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Build Error Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Error Log": {
+      "main": [
+        [
+          {
+            "node": "Store Error Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Store Error Log": {
+      "main": [
+        [
+          {
+            "node": "Send Error Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}

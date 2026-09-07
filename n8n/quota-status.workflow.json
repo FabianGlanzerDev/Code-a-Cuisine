@@ -1,0 +1,224 @@
+{
+  "name": "Code a Cuisine - Quota Status",
+  "nodes": [
+    {
+      "id": "status-webhook",
+      "name": "Quota Status Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -700,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "GET",
+        "path": "quota-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "notes": "Returns quota without consuming a generation.",
+      "notesInFlow": true
+    },
+    {
+      "id": "status-keys",
+      "name": "Build Quota Keys",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -480,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const item = $input.first().json;\nconst headers = item.headers ?? {};\nfunction isIpv4(value) { const parts = value.split('.'); return parts.length === 4 && parts.every((part) => /^\\d{1,3}$/.test(part) && Number(part) <= 255); }\nfunction isIpv6(value) { if (!value.includes(':') || !/^[0-9a-f:]+$/i.test(value)) return false; if ((value.match(/::/g) || []).length > 1) return false; const parts = value.split(':'); const filled = parts.filter(Boolean); if (filled.some((part) => part.length > 4)) return false; return value.includes('::') ? filled.length <= 7 : filled.length === 8; }\nconst forwarded = headers['cf-connecting-ip'] || headers['x-real-ip'] || headers['x-forwarded-for'] || '';\nconst candidate = String(forwarded).split(',')[0].trim().replace(/^\\[|\\]$/g, '');\nconst ip = isIpv4(candidate) || isIpv6(candidate) ? candidate : 'unknown';\nconst dayKey = new Date().toISOString().slice(0, 10);\nreturn [{ json: { ip, dayKey, systemKey: `system:${dayKey}`, ipKey: `ip:${dayKey}:${ip}` } }];"
+      },
+      "notes": "Creates system and per-IP daily keys.",
+      "notesInFlow": true
+    },
+    {
+      "id": "status-system-read",
+      "name": "Read Status System Quota",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -260,
+        0
+      ],
+      "alwaysOutputData": true,
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "SET_QUOTA_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "quotaKey",
+              "keyValue": "={{ $json.systemKey }}"
+            }
+          ]
+        },
+      "returnAll": true
+    },
+    "alwaysOutputData": true,
+      "notes": "Reads shared daily quota for the status endpoint.",
+      "notesInFlow": true
+    },
+    {
+      "id": "status-system-normalize",
+      "name": "Normalize Status System",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -40,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst context = $('Build Quota Keys').first().json;\nreturn [{ json: { ...context, systemUsed: Number(row.quota || 0) } }];"
+      },
+      "notes": "Normalizes the system status row.",
+      "notesInFlow": true
+    },
+    {
+      "id": "status-ip-read",
+      "name": "Read Status IP Quota",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        180,
+        0
+      ],
+      "alwaysOutputData": true,
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "SET_QUOTA_TABLE_ID",
+          "mode": "id"
+        },
+        "matchType": "allConditions",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "quotaKey",
+              "keyValue": "={{ $json.ipKey }}"
+            }
+          ]
+        },
+      "returnAll": true
+    },
+    "alwaysOutputData": true,
+      "notes": "Reads caller-IP quota for the status endpoint.",
+      "notesInFlow": true
+    },
+    {
+      "id": "status-build",
+      "name": "Build Quota Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        0
+      ],
+      "parameters": {
+        "jsCode": "const row = $input.first().json;\nconst context = $('Normalize Status System').first().json;\nconst ipUsed = Number(row.quota || 0);\nreturn [{ json: {\n  ipLimit: 3, ipUsed, ipRemaining: Math.max(0, 3 - ipUsed),\n  systemLimit: 12, systemUsed: context.systemUsed,\n  systemRemaining: Math.max(0, 12 - context.systemUsed),\n} }];"
+      },
+      "notes": "Builds remaining recipe-slot values (3/IP/day and 12/system/day) for the frontend.",
+      "notesInFlow": true
+    },
+    {
+      "id": "status-response",
+      "name": "Return Quota Status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        620,
+        0
+      ],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "notes": "Returns the non-consuming quota snapshot.",
+      "notesInFlow": true
+    }
+  ],
+  "connections": {
+    "Quota Status Request": {
+      "main": [
+        [
+          {
+            "node": "Build Quota Keys",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Quota Keys": {
+      "main": [
+        [
+          {
+            "node": "Read Status System Quota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Status System Quota": {
+      "main": [
+        [
+          {
+            "node": "Normalize Status System",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Status System": {
+      "main": [
+        [
+          {
+            "node": "Read Status IP Quota",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Status IP Quota": {
+      "main": [
+        [
+          {
+            "node": "Build Quota Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Quota Status": {
+      "main": [
+        [
+          {
+            "node": "Return Quota Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "tags": []
+}
