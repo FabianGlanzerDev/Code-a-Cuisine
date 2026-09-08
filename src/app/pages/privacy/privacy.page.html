@@ -1,0 +1,80 @@
+<main class="page-shell" lang="de">
+  <div class="content content--green">
+    <app-site-header [linked]="true" />
+    <a class="back-link privacy-back" routerLink="/">
+      <img src="img/Arrow 11.svg" alt=""><span>Startseite</span>
+    </a>
+    <article class="privacy-card">
+      <h1>Datenschutzerklärung</h1>
+      <p>Stand: 8. September 2026</p>
+      <h2>1. Verantwortlicher</h2>
+      <address>Fabian Glanzer<br>Neue Frauengasse 8<br>8750 Judenburg, Österreich<br>
+        E-Mail: <a href="mailto:Fabsdev@gmx.at">Fabsdev&#64;gmx.at</a>
+      </address>
+      <p>Diese Hinweise beschreiben die Datenverarbeitung bei der Nutzung von Code à Cuisine.</p>
+      <h2>2. Aufruf der Website</h2>
+      <p>Die Website wird über die Hosting-Infrastruktur unter developerakademie.net bereitgestellt.
+        Beim Abruf werden technisch erforderliche Verbindungsdaten verarbeitet, insbesondere IP-Adresse,
+        Zeitpunkt, angeforderte Adresse und Browserinformationen. Dies dient der Auslieferung,
+        Fehlerdiagnose und Sicherheit. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO;
+        unser berechtigtes Interesse ist der sichere Betrieb.</p>
+      <h2>3. Rezeptgenerierung</h2>
+      <p>Beim Start einer Generierung werden Zutaten und Mengen, Portionsanzahl, Anzahl der kochenden
+        Personen, Kochzeit, Küche und Ernährungspräferenz an n8n Cloud übermittelt. Der Workflow prüft
+        die Anfrage und sendet die Rezeptanforderungen an die Gemini API von Google. Die IP-Adresse
+        wird zur Zugriffsbeschränkung verarbeitet, aber nicht gezielt in den Rezeptprompt aufgenommen.</p>
+      <p>Die Verarbeitung dient der von Ihnen angeforderten Rezeptfunktion auf Grundlage von
+        Art. 6 Abs. 1 lit. b DSGVO. Ohne die notwendigen Eingaben kann die Funktion nicht ausgeführt
+        werden. Bitte geben Sie keine Namen, Kontaktdaten oder medizinischen Angaben in Zutatenfelder ein.</p>
+      <p>Die beteiligten Dienste sind n8n Cloud und Google Gemini. Weitere Informationen:
+        <a href="https://n8n.io/legal/privacy/">Datenschutz bei n8n</a> und
+        <a href="https://ai.google.dev/gemini-api/terms">Gemini-API-Bedingungen</a>.
+        Google erläutert dort die Datenverwendung, einschließlich besonderer Regeln für den EWR.</p>
+      <h2>4. Tageskontingent und Fehlerdiagnose</h2>
+      <p>Eine aus Ihrer IP-Adresse gebildete Kennung, Tageszähler und der Zeitpunkt der letzten Anfrage
+        werden in einem nicht öffentlich lesbaren Firebase-Bereich gespeichert. Die Kennung ist
+        technisch umformatiert, nicht anonymisiert. Dies begrenzt Missbrauch und API-Kosten auf
+        Grundlage unseres berechtigten Interesses gemäß Art. 6 Abs. 1 lit. f DSGVO.</p>
+      <p>Ein neuer Quotentag löscht frühere Datensätze nicht automatisch. In n8n können Ausführungs- und
+        Fehlerprotokolle gespeichert werden, die je nach Ausführung auch Anfrageinhalte und
+        Verbindungsdaten enthalten.</p>
+      <h2>5. Öffentliches Kochbuch und Firebase</h2>
+      <p>Generierte Rezepte mit Zutaten, Zubereitung, Präferenzen und Nährwertangaben werden in Google
+        Firebase Realtime Database gespeichert und sind im Kochbuch öffentlich abrufbar. Auch
+        Like-Zähler sind öffentlich. Die konfigurierte Datenbankregion ist europe-west1 (Belgien).
+        Bei direkten Datenbankaufrufen erhält Google technische Verbindungsdaten einschließlich Ihrer IP-Adresse.</p>
+      <p>Die Bereitstellung der angeforderten Rezeptfunktion beruht auf Art. 6 Abs. 1 lit. b DSGVO;
+        der Betrieb des gemeinsamen Kochbuchs und sein Schutz auf unserem berechtigten Interesse
+        gemäß Art. 6 Abs. 1 lit. f DSGVO.
+        Anbieterinformationen: <a href="https://firebase.google.com/support/privacy">Datenschutz bei Firebase</a>.</p>
+      <h2>6. Lokale Speicherung</h2>
+      <p>Zuletzt generierte Rezepte und noch nicht bestätigte Speicherungen werden im Local Storage
+        Ihres Browsers aufbewahrt. Dies ermöglicht die Wiederanzeige nach dem Neuladen und die
+        Wiederherstellung nach Speicherfehlern. Die Einträge heißen
+        <code>code-a-cuisine-generated-recipes</code> und <code>code-a-cuisine-pending-recipes</code>.</p>
+      <p>Die Einträge haben keine feste Ablaufzeit. Sie können sie über die Website-Daten Ihres Browsers
+        löschen; lokal gespeicherte Ergebnisse gehen dabei verloren. Diese Speicherung dient der
+        angeforderten Funktion. Im Frontend sind keine Analyse- oder Werbetracker eingebunden;
+        Schriftarten werden lokal geladen.</p>
+      <h2>7. Speicherdauer und internationale Verarbeitung</h2>
+      <p>Rezepte bleiben bis zu ihrer Entfernung aus dem Kochbuch gespeichert. Lokale Ergebnisse
+        bleiben bis zum Überschreiben oder Löschen im Browser erhalten. Für technische Protokolle
+        gelten die beim Hosting- und Cloud-Dienst eingerichteten Aufbewahrungsregeln.
+        Bei Auskunfts- und Löschanfragen kontaktieren Sie uns bitte unter der oben angegebenen Adresse.</p>
+      <p>Bei internationalen Cloud-Diensten kann die Verarbeitung außerhalb des EWR stattfinden.
+        Die Firebase-Datenbankregion bedeutet nicht, dass alle beteiligten Dienste ausschließlich
+        innerhalb der EU verarbeiten. Angaben zu Empfängern und Übermittlungsmechanismen finden
+        Sie in den verlinkten Anbieterinformationen.</p>
+      <h2>8. Ihre Rechte</h2>
+      <p>Unter den gesetzlichen Voraussetzungen haben Sie Rechte auf Auskunft, Berichtigung,
+        Löschung, Einschränkung der Verarbeitung und Datenübertragbarkeit. Einer Verarbeitung auf
+        Grundlage berechtigter Interessen können Sie aus Gründen Ihrer besonderen Situation
+        widersprechen. Soweit eine Verarbeitung auf Einwilligung beruht, ist diese mit Wirkung
+        für die Zukunft widerrufbar.</p>
+      <p>Sie können sich bei einer Aufsichtsbehörde beschweren, insbesondere bei der
+        <a href="https://dsb.gv.at/">österreichischen Datenschutzbehörde</a>.
+        Die Rezeptvorschläge sind keine automatisierten Entscheidungen mit rechtlicher oder
+        vergleichbar erheblicher Wirkung.</p>
+    </article>
+  </div>
+</main>

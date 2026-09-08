@@ -21,7 +21,7 @@
   display: flex;
   flex: 1;
   width: 100%;
-  margin: 96px 0;
+  margin: 96px 0 24px;
 }
 
 .welcome-copy {
@@ -133,7 +133,7 @@
 @media (max-width: 767px) {
   .welcome-content {
     width: 80%;
-    margin: 44px 0;
+    margin: 44px 0 24px;
   }
 
   .welcome-copy h1 {
@@ -145,12 +145,25 @@
   }
 }
 
-.welcome-imprint {
-  position: absolute;
+
+.welcome-legal {
+  position: relative;
   z-index: 2;
-  right: var(--page-gutter);
-  bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-self: flex-start;
+  gap: 8px 24px;
+  max-width: 100%;
+  margin-top: auto;
+  padding: 0 12px 12px 0;
+  background: var(--green-primary);
+}
+
+.welcome-legal a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-size: 0.875rem;
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: 4px;
 }

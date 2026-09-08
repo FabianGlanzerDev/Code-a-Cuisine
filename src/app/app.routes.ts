@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { PrivacyPage } from './pages/privacy/privacy.page';
 import { CookbookPage } from './pages/cookbook/cookbook.page';
 import { ImprintPage } from './pages/imprint/imprint.page';
 import { IngredientEntryPage } from './pages/ingredient-entry/ingredient-entry.page';
@@ -11,6 +12,7 @@ import { WelcomePage } from './pages/welcome/welcome.page';
 export const routes: Routes = [
   { path: '', component: WelcomePage },
   { path: 'imprint', component: ImprintPage },
+  { path: 'datenschutz', component: PrivacyPage },
   { path: 'generate-recipe', component: IngredientEntryPage },
   { path: 'choose-preferences', component: PreferencesPage },
   { path: 'recipe-results', component: RecipeResultsPage },

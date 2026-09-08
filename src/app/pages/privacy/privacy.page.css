@@ -1,0 +1,19 @@
+.privacy-back { margin-bottom: 40px; }
+.privacy-card {
+  max-width: 880px;
+  margin: 0 auto 48px;
+  padding: clamp(20px, 4vw, 48px);
+  border-radius: var(--radius-xl);
+  background: var(--green-light);
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+}
+.privacy-card h1 {
+  margin-top: 0;
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 6vw, 3.5rem);
+  line-height: 1.2;
+}
+.privacy-card h2 { margin-top: 32px; font-size: 1.35rem; line-height: 1.4; }
+.privacy-card a { text-decoration: underline; text-underline-offset: 3px; }
+.privacy-card address { font-style: normal; }
