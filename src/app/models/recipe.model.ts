@@ -35,6 +35,7 @@ export interface Nutrition {
 export interface RecipeIngredient {
   ingredient: string;
   servingSize: string;
+  perPortionServingSize?: string;
 }
 
 export interface RecipeDirection {
@@ -44,6 +45,9 @@ export interface RecipeDirection {
   cook: number;
   parallel?: boolean;
   timingNote?: string;
+  startMinute?: number;
+  durationMinutes?: number;
+  dependsOn?: number[];
 }
 
 export interface QuotaStatus {
@@ -63,11 +67,13 @@ export interface GenerationError {
 export interface GenerationEnvelope {
   recipes: GeneratedRecipe[];
   quota: QuotaStatus;
+  persisted?: boolean;
 }
 
 export type GenerationResponse = GeneratedRecipe[] | GenerationEnvelope | GenerationError;
 
 export interface GeneratedRecipe {
+  id?: string;
   title: string;
   cookingTime: string;
   portionsAmount?: number;

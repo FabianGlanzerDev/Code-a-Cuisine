@@ -24,7 +24,7 @@
         0
       ],
       "parameters": {
-        "jsCode": "const error = $input.first().json;\nconst timestamp = new Date().toISOString();\nconst workflow = String(error.workflow?.name || 'unknown');\nconst execution = String(error.execution?.id || 'unknown');\nconst message = String(error.execution?.error?.message || error.message || 'Unknown error');\nreturn [{ json: { logKey: `${timestamp}:${execution}`, timestamp, workflow, execution, message } }];"
+        "jsCode": "const error = $input.first().json;\nconst timestamp = new Date().toISOString();\nconst workflow = String(error.workflow?.name || 'unknown');\nconst execution = String(error.execution?.id || 'trigger-failure');\nconst message = 'Execution failed. Inspect the restricted n8n execution log for details.';\nreturn [{ json: { logKey: `${timestamp}:${execution}`, timestamp, workflow, execution, message } }];"
       },
       "notes": "Normalizes execution error metadata for logging.",
       "notesInFlow": true
@@ -130,7 +130,7 @@
         "toEmail": "SET_ALERT_EMAIL",
         "subject": "=Code a Cuisine n8n error: {{ $json.workflow }}",
         "emailFormat": "text",
-        "text": "=Workflow: {{ $json.workflow }}\\nExecution: {{ $json.execution }}\\nTime: {{ $json.timestamp }}\\nError: {{ $json.message }}",
+        "text": "=Workflow: {{ $json.workflow }}\nExecution: {{ $json.execution }}\nTime: {{ $json.timestamp }}\nError: {{ $json.message }}",
         "options": {}
       },
       "notes": "Sends an optional SMTP alert after logging the workflow failure.",

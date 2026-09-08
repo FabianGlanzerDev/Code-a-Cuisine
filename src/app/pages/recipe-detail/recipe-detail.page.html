@@ -2,9 +2,9 @@
   <div class="content content--green">
     <app-site-header [linked]="true" />
 
-    <a class="back-link back-link--button" routerLink="/recipe-results">
+    <a class="back-link back-link--button" [routerLink]="backRoute" [queryParams]="backQuery" [attr.aria-label]="backLabel">
       <img src="img/Arrow 11.svg" alt="">
-      <span class="back-link__desktop">Recipe Results</span>
+      <span class="back-link__desktop">{{ backLabel }}</span>
     </a>
 
     @if (loading) {
@@ -29,6 +29,7 @@
             <span>Cooking time: {{ recipe.cookingTime }}</span>
           </div>
           <h1>{{ recipe.title }}</h1>
+          @if (recipe.portionsAmount) { <p>Ingredients for {{ recipe.portionsAmount }} portions</p> }
 
           <div class="detail-cooks" aria-label="Cooking people">
             <span>Cooking person: {{ recipe.cooksAmount }}</span>
@@ -118,6 +119,7 @@
       </section>
 
       <section class="directions-section">
+        <h2 class="sr-only">Directions</h2>
         <img class="directions-visual" src="img/Hero for silgle recipe view.png" alt="Cooking directions illustration">
         <div class="directions-grid">
           @for (direction of recipe.directions; track direction.order; let index = $index) {

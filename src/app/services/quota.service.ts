@@ -8,14 +8,28 @@ import { QuotaStatus } from '../models/recipe.model';
 export class QuotaService {
   status: QuotaStatus | null = null;
 
+  /**
+   * Initializes the component or service with its required dependencies.
+   * @param http Injected HTTP client.
+   */
   constructor(private readonly http: HttpClient) {}
 
-  /** Loads the current IP and system quota from n8n. */
+
+
+  /**
+   * Loads the current IP and system quota from n8n.
+   * @returns {Observable<QuotaStatus>} The result of this operation.
+   */
   load(): Observable<QuotaStatus> {
     return this.http.get<QuotaStatus>(environment.quotaStatusUrl);
   }
 
-  /** Stores a quota snapshot returned by n8n. */
+
+
+  /**
+   * Stores a quota snapshot returned by n8n.
+   * @param status Quota snapshot.
+   */
   set(status: QuotaStatus | undefined): void {
     if (status) this.status = status;
   }

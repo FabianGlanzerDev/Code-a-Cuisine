@@ -19,46 +19,79 @@ export class RecipeListPage implements OnInit {
   loading = true;
   errorMessage = '';
 
+  /**
+   * Initializes the component or service with its required dependencies.
+   * @param store Shared recipe collections.
+   * @param api Recipe persistence service.
+   * @param route Active route metadata.
+   */
   constructor(
     public readonly store: RecipeStoreService,
     private readonly api: RecipeApiService,
     private readonly route: ActivatedRoute,
   ) {}
 
-  /** Loads cuisine metadata and the recipes for the requested category. */
+
+
+  /**
+   * Loads cuisine metadata and the recipes for the requested category.
+   */
   ngOnInit(): void {
     const cuisineName = this.route.snapshot.queryParamMap.get('cuisine');
     this.cuisine = this.store.findCuisine(cuisineName);
     if (!cuisineName || !this.cuisine) return this.finishWithError('This cuisine category is not available.');
 
     this.api.getByCuisine(cuisineName).subscribe({
-      next: (recipes) => this.setRecipes(recipes),
-      error: () => this.finishWithError('Recipes could not be loaded. Please try again.'),
+      next: /** Applies a successful asynchronous result. @param recipes Current callback input. */ (recipes) => this.setRecipes(recipes),
+      error: /** Handles a failed asynchronous operation. */ () => this.finishWithError('Recipes could not be loaded. Please try again.'),
     });
   }
 
-  /** Returns only recipes belonging to the active page. */
+
+
+  /**
+   * Returns only recipes belonging to the active page.
+   * @returns {Recipe[]} The result of this operation.
+   */
   get pageRecipes(): Recipe[] {
     const start = (this.currentPage - 1) * this.pageSize;
     return this.store.selectedRecipes.slice(start, start + this.pageSize);
   }
 
-  /** Returns the number of pages required for the loaded recipes. */
+
+
+  /**
+   * Returns the number of pages required for the loaded recipes.
+   * @returns {number} The result of this operation.
+   */
   get totalPages(): number {
     return Math.max(1, Math.ceil(this.store.selectedRecipes.length / this.pageSize));
   }
 
-  /** Opens the previous recipe page when available. */
+
+
+  /**
+   * Opens the previous recipe page when available.
+   */
   previousPage(): void {
     this.currentPage = Math.max(1, this.currentPage - 1);
   }
 
-  /** Opens the next recipe page when available. */
+
+
+  /**
+   * Opens the next recipe page when available.
+   */
   nextPage(): void {
     this.currentPage = Math.min(this.totalPages, this.currentPage + 1);
   }
 
-  /** Stores loaded recipes and resets pagination to the first page. */
+
+
+  /**
+   * Stores loaded recipes and resets pagination to the first page.
+   * @param recipes Recipe set to process.
+   */
   private setRecipes(recipes: Recipe[]): void {
     this.store.setSelectedRecipes(recipes);
     this.currentPage = 1;
@@ -66,7 +99,12 @@ export class RecipeListPage implements OnInit {
     this.errorMessage = '';
   }
 
-  /** Resets stale results and exposes a readable load error. */
+
+
+  /**
+   * Resets stale results and exposes a readable load error.
+   * @param message Readable error message.
+   */
   private finishWithError(message: string): void {
     this.store.setSelectedRecipes([]);
     this.loading = false;

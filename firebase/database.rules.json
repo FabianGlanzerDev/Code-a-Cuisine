@@ -1,0 +1,19 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "privateQuota": {
+      ".read": false,
+      ".write": false
+    },
+    "recipes": {
+      ".read": true,
+      ".indexOn": ["cuisine"],
+      "$recipeId": {
+        "likes": {
+          ".write": "data.parent().hasChildren(['title', 'preferences', 'directions']) && newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0 && ((!data.exists() && newData.val() === 1) || (data.isNumber() && (newData.val() === data.val() + 1 || newData.val() === data.val() - 1)))"
+        }
+      }
+    }
+  }
+}

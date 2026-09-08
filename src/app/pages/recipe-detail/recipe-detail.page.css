@@ -453,6 +453,16 @@
     gap: 8px;
   }
 
+  .detail-title-block h1 {
+    font-size: clamp(2rem, 8vw, 3.375rem);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .detail-cook-badges {
+    flex-wrap: wrap;
+  }
+
   .detail-tags {
     gap: 8px;
   }
@@ -494,6 +504,7 @@
 
   .detail-footer {
     gap: 16px;
+    flex-wrap: wrap;
   }
 
   .detail-new {
@@ -592,6 +603,8 @@
 .heart-action {
   display: inline-flex;
   width: 40px;
+  min-width: 44px;
+  min-height: 44px;
   height: 35.35px;
   margin-left: 0;
   padding: 0;

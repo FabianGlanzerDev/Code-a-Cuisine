@@ -2,11 +2,11 @@
 <app-loading-overlay />
 }
 
-<main class="page-shell preferences-page">
+<main class="page-shell preferences-page" [attr.inert]="showQuantityPopup || loading ? '' : null">
   <div class="content content--green">
     <app-site-header />
 
-    <a class="back-link" routerLink="/generate-recipe">
+    <a class="back-link" routerLink="/generate-recipe" aria-label="Back to ingredients">
       <img src="img/Arrow 11.svg" alt="">
       <span class="back-link__desktop">Ingredients</span>
     </a>
@@ -18,8 +18,10 @@
       <p class="quota-status" aria-live="polite">
         Today: {{ quota.status.ipRemaining }} of {{ quota.status.ipLimit }} recipe suggestions available for your IP.
         System capacity: {{ quota.status.systemRemaining }} of {{ quota.status.systemLimit }}.
+        Each request reserves 3 recipes. Daily reset: midnight UTC.
       </p>
       }
+      @if (quotaError) { <p class="quota-status" role="status">{{ quotaError }}</p> }
 
       <div class="counter-grid">
         <section>
@@ -103,7 +105,14 @@
       <p class="generation-error" role="alert">{{ errorMessage }}</p>
       }
 
-      <button class="button button--primary generate-button" type="button" [disabled]="!generator.canGenerate()"
+      @if (store.pendingRecipes.length) {
+      <p class="generation-error" role="status">Three generated recipes are waiting to be saved.
+        @if (!store.pendingPersisted) { Keep this tab open until saving succeeds. }
+      </p>
+      <button class="button button--primary" type="button" [disabled]="loading" (click)="checkStorage()">Check saved recipes</button>
+      }
+
+      <button class="button button--primary generate-button" type="button" [disabled]="generationDisabled"
         (click)="generateRecipes()">Generate a recipe</button>
     </section>
   </div>
@@ -111,8 +120,8 @@
 
 
 @if (showQuantityPopup) {
-<div class="quantity-modal-backdrop" role="presentation" (click)="closeQuantityPopup()">
-  <section class="quantity-modal" role="dialog" aria-modal="true" aria-labelledby="quantity-modal-title"
+<div class="quantity-modal-backdrop" role="presentation" (click)="closeQuantityPopup()" (keydown.escape)="closeQuantityPopup()">
+  <section class="quantity-modal" appFocusDialog role="dialog" aria-modal="true" aria-labelledby="quantity-modal-title"
     (click)="$event.stopPropagation()">
     <button class="quantity-modal__close" type="button" aria-label="Close" (click)="closeQuantityPopup()">×</button>
     <h2 id="quantity-modal-title">Ups! Not quite enough...</h2>

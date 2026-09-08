@@ -52,7 +52,7 @@ input:focus-visible {
 .content>.back-link--button,
 .recipe-list-nav>.back-link {
   color: #1e5515;
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 500;
   line-height: 1;
 }

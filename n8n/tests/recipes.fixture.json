@@ -1,0 +1,230 @@
+[
+  {
+    "title": "Roasted Carrot Bowl",
+    "cookingTime": "10 min",
+    "portionsAmount": 2,
+    "cooksAmount": 2,
+    "nutritionalInformation": {
+      "perPortion": {
+        "calories": "210 kcal",
+        "proteins": "10g",
+        "proteinsPercent": "19.05%",
+        "fats": "10g",
+        "fatsPercent": "42.86%",
+        "carbs": "20g",
+        "carbsPercent": "38.1%"
+      },
+      "total": {
+        "calories": "420 kcal",
+        "proteins": "20g",
+        "proteinsPercent": "19.05%",
+        "fats": "20g",
+        "fatsPercent": "42.86%",
+        "carbs": "40g",
+        "carbsPercent": "38.1%"
+      }
+    },
+    "preferences": {
+      "cuisine": "german",
+      "cookingTime": "quick",
+      "dietPreferences": "vegan"
+    },
+    "ingredients": {
+      "yourIngredients": [
+        {
+          "ingredient": "Carrot",
+          "servingSize": "100g",
+          "perPortionServingSize": "50g"
+        }
+      ],
+      "extraIngredients": []
+    },
+    "directions": [
+      {
+        "order": 1,
+        "title": "Prepare carrots",
+        "description": "Wash and cut carrots for variation 1.",
+        "cook": 1,
+        "parallel": true,
+        "startMinute": 0,
+        "durationMinutes": 5,
+        "dependsOn": []
+      },
+      {
+        "order": 2,
+        "title": "Prepare equipment",
+        "description": "Prepare the cooking equipment.",
+        "cook": 2,
+        "parallel": true,
+        "startMinute": 0,
+        "durationMinutes": 5,
+        "dependsOn": []
+      },
+      {
+        "order": 3,
+        "title": "Cook carrots",
+        "description": "Cook until tender and serve.",
+        "cook": 1,
+        "parallel": false,
+        "startMinute": 5,
+        "durationMinutes": 5,
+        "dependsOn": [
+          1,
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Steamed Carrot Plate",
+    "cookingTime": "10 min",
+    "portionsAmount": 2,
+    "cooksAmount": 2,
+    "nutritionalInformation": {
+      "perPortion": {
+        "calories": "210 kcal",
+        "proteins": "10g",
+        "proteinsPercent": "19.05%",
+        "fats": "10g",
+        "fatsPercent": "42.86%",
+        "carbs": "20g",
+        "carbsPercent": "38.1%"
+      },
+      "total": {
+        "calories": "420 kcal",
+        "proteins": "20g",
+        "proteinsPercent": "19.05%",
+        "fats": "20g",
+        "fatsPercent": "42.86%",
+        "carbs": "40g",
+        "carbsPercent": "38.1%"
+      }
+    },
+    "preferences": {
+      "cuisine": "german",
+      "cookingTime": "quick",
+      "dietPreferences": "vegan"
+    },
+    "ingredients": {
+      "yourIngredients": [
+        {
+          "ingredient": "Carrot",
+          "servingSize": "100g",
+          "perPortionServingSize": "50g"
+        }
+      ],
+      "extraIngredients": []
+    },
+    "directions": [
+      {
+        "order": 1,
+        "title": "Prepare carrots",
+        "description": "Wash and cut carrots for variation 2.",
+        "cook": 1,
+        "parallel": true,
+        "startMinute": 0,
+        "durationMinutes": 5,
+        "dependsOn": []
+      },
+      {
+        "order": 2,
+        "title": "Prepare equipment",
+        "description": "Prepare the cooking equipment.",
+        "cook": 2,
+        "parallel": true,
+        "startMinute": 0,
+        "durationMinutes": 5,
+        "dependsOn": []
+      },
+      {
+        "order": 3,
+        "title": "Cook carrots",
+        "description": "Cook until tender and serve.",
+        "cook": 1,
+        "parallel": false,
+        "startMinute": 5,
+        "durationMinutes": 5,
+        "dependsOn": [
+          1,
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Carrot Skillet",
+    "cookingTime": "10 min",
+    "portionsAmount": 2,
+    "cooksAmount": 2,
+    "nutritionalInformation": {
+      "perPortion": {
+        "calories": "210 kcal",
+        "proteins": "10g",
+        "proteinsPercent": "19.05%",
+        "fats": "10g",
+        "fatsPercent": "42.86%",
+        "carbs": "20g",
+        "carbsPercent": "38.1%"
+      },
+      "total": {
+        "calories": "420 kcal",
+        "proteins": "20g",
+        "proteinsPercent": "19.05%",
+        "fats": "20g",
+        "fatsPercent": "42.86%",
+        "carbs": "40g",
+        "carbsPercent": "38.1%"
+      }
+    },
+    "preferences": {
+      "cuisine": "german",
+      "cookingTime": "quick",
+      "dietPreferences": "vegan"
+    },
+    "ingredients": {
+      "yourIngredients": [
+        {
+          "ingredient": "Carrot",
+          "servingSize": "100g",
+          "perPortionServingSize": "50g"
+        }
+      ],
+      "extraIngredients": []
+    },
+    "directions": [
+      {
+        "order": 1,
+        "title": "Prepare carrots",
+        "description": "Wash and cut carrots for variation 3.",
+        "cook": 1,
+        "parallel": true,
+        "startMinute": 0,
+        "durationMinutes": 5,
+        "dependsOn": []
+      },
+      {
+        "order": 2,
+        "title": "Prepare equipment",
+        "description": "Prepare the cooking equipment.",
+        "cook": 2,
+        "parallel": true,
+        "startMinute": 0,
+        "durationMinutes": 5,
+        "dependsOn": []
+      },
+      {
+        "order": 3,
+        "title": "Cook carrots",
+        "description": "Cook until tender and serve.",
+        "cook": 1,
+        "parallel": false,
+        "startMinute": 5,
+        "durationMinutes": 5,
+        "dependsOn": [
+          1,
+          2
+        ]
+      }
+    ]
+  }
+]

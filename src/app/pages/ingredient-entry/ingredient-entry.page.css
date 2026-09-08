@@ -266,29 +266,6 @@ label[for="servingSize"] {
   background: transparent;
 }
 
-.ingredient-edit {
-  padding: 2px 0 3px;
-  border: 0;
-  border-bottom: 1px solid var(--green-primary);
-  border-radius: 0;
-  outline: 0;
-  background: transparent;
-  color: inherit;
-  font: inherit;
-}
-
-.ingredient-edit--serving {
-  width: 58px;
-}
-
-.ingredient-edit--name {
-  width: min(150px, 30vw);
-}
-
-.ingredient-edit:focus {
-  border-bottom-width: 2px;
-}
-
 .ingredient-next {
   display: block;
   margin: 52px 0 32px auto;
@@ -334,10 +311,6 @@ label[for="servingSize"] {
 
   .serving-row {
     grid-template-columns: 61px 72px 24px;
-  }
-
-  .ingredient-edit--name {
-    width: min(160px, 48vw);
   }
 
   .ingredient-next {
@@ -433,7 +406,7 @@ label[for="servingSize"] {
   padding: 0 12px;
   background: transparent;
   color: var(--green-dark);
-  font-size: 0.95rem;
+  font-size: 1rem;
   line-height: 24px;
   text-align: left;
 }

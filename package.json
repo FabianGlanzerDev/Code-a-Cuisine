@@ -6,7 +6,12 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "test:backend": "node --test n8n/tests/*.test.cjs",
+    "test:rules": "node --test firebase/tests/*.test.cjs",
+    "n8n:build": "node n8n/build-workflows.cjs",
+    "n8n:check": "node n8n/build-workflows.cjs --check",
+    "check:style": "node scripts/check-code-style.cjs"
   },
   "prettier": {
     "printWidth": 100,

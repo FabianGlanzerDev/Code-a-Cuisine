@@ -33,7 +33,7 @@
   align-items: flex-start;
 }
 
-.welcome-copy h2 {
+.welcome-tagline {
   margin: 0;
   font-size: clamp(1.5rem, 3vw, 3rem);
   font-weight: 600;
@@ -55,11 +55,6 @@
   margin-top: 5.5rem;
 }
 
-.welcome-start:hover,
-.welcome-start:focus-visible {
-  background: #fae0c6;
-}
-
 .welcome-start,
 .welcome-cookbook a {
   transition: background-color 300ms ease-out;
@@ -68,11 +63,6 @@
 .welcome-start:hover,
 .welcome-start:focus-visible {
   background-color: #fae0c6;
-}
-
-.welcome-cookbook a:hover,
-.welcome-cookbook a:focus-visible {
-  background-color: rgb(250 240 230 / 75%);
 }
 
 .welcome-cookbook {

@@ -29,7 +29,7 @@
           <div class="field">
             <label for="servingSize">Serving size</label>
             <div class="serving-row">
-              <input id="servingSize" name="servingSize" min="1" max="10000" type="number" required
+              <input id="servingSize" name="servingSize" min="0.001" step="any" max="10000" type="number" required
                 [(ngModel)]="servingSize">
 
               <div class="unit-picker" (click)="$event.stopPropagation()">
@@ -69,7 +69,7 @@
                 <span class="ingredient-serving">{{ ingredient.servingSize }}</span>
                 <span class="ingredient-name">{{ ingredient.ingredient }}</span>
                 } @else {
-                <input class="ingredient-edit-amount" aria-label="Serving size" type="number" min="1" max="10000"
+                <input class="ingredient-edit-amount" aria-label="Serving size" type="number" min="0.001" step="any" max="10000"
                   [(ngModel)]="editServingSize">
 
                 <div class="unit-picker unit-picker--edit" (click)="$event.stopPropagation()">
@@ -114,8 +114,9 @@
         </section>
       </div>
 
+      @if (errorMessage) { <p role="alert">{{ errorMessage }}</p> }
       <button class="button button--primary ingredient-next" type="button"
-        [disabled]="!generator.requirements.ingredients.length" (click)="continueToPreferences()">
+        [disabled]="!generator.requirements.ingredients.length || !!editingIngredient" (click)="continueToPreferences()">
         Next step
       </button>
     </div>

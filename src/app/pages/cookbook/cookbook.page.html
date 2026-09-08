@@ -16,11 +16,14 @@
 
       <div class="liked-recipes">
         <h2>Most liked recipes <img src="img/favorite-most-liked.svg" alt="Heart"></h2>
+        @if (loading) { <p role="status">Loading recipes...</p> }
+        @if (errorMessage) { <p role="alert">{{ errorMessage }}</p> }
+        @if (!loading && !errorMessage && !store.currentRecipes.length) { <p>No recipes have been shared yet.</p> }
         <div #likedScroller class="liked-recipes__scroller" (pointerdown)="startLikedDrag($event, likedScroller)"
           (pointermove)="moveLikedDrag($event, likedScroller)" (pointerup)="endLikedDrag($event, likedScroller)"
           (pointercancel)="endLikedDrag($event, likedScroller)">
           @for (recipe of store.currentRecipes; track recipe.id) {
-          <a class="liked-card" [routerLink]="['/recipe-results', recipe.id]" draggable="false"
+          <a class="liked-card" [routerLink]="['/recipe-results', recipe.id]" [queryParams]="{ from: 'cookbook' }" draggable="false"
             (dragstart)="$event.preventDefault()" (click)="handleLikedCardClick($event)">
             <div>
               <p><img src="img/Frame 750.svg" alt="">Cooking time: {{ recipe.cookingTime }}</p>

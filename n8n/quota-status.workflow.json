@@ -2,202 +2,320 @@
   "name": "Code a Cuisine - Quota Status",
   "nodes": [
     {
-      "id": "status-webhook",
-      "name": "Quota Status Request",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -700,
-        0
-      ],
       "parameters": {
-        "httpMethod": "GET",
         "path": "quota-status",
         "responseMode": "responseNode",
         "options": {}
       },
-      "notes": "Returns quota without consuming a generation.",
-      "notesInFlow": true
+      "id": "9de54e9b-1e53-4d2d-879a-1f491c892062",
+      "name": "Recipe Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        864,
+        80
+      ],
+      "notesInFlow": true,
+      "webhookId": "e81cf00d-80c7-4cba-9eae-78693b1d14de",
+      "notes": "Receives requests through the trusted ingress proxy."
     },
     {
-      "id": "status-keys",
-      "name": "Build Quota Keys",
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    trustedIpHeader: 'cf-connecting-ip',\n    modelName: 'models/gemini-3.6-flash',\n    quotaUrl: 'https://code-a-cuisine-edd75-default-rtdb.europe-west1.firebasedatabase.app/privateQuota/v2/state.json',\n    recipesUrl: 'https://code-a-cuisine-edd75-default-rtdb.europe-west1.firebasedatabase.app/recipes.json'\n  }\n}];"
+      },
+      "id": "759894e4-3a03-49a8-876a-80b35364245a",
+      "name": "Backend Configuration",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -480,
-        0
+        1088,
+        80
       ],
+      "notesInFlow": true,
+      "notes": "Set trustedIpHeader only after proving the ingress overwrites that header. Empty means fail closed."
+    },
+    {
       "parameters": {
-        "jsCode": "const item = $input.first().json;\nconst headers = item.headers ?? {};\nfunction isIpv4(value) { const parts = value.split('.'); return parts.length === 4 && parts.every((part) => /^\\d{1,3}$/.test(part) && Number(part) <= 255); }\nfunction isIpv6(value) { if (!value.includes(':') || !/^[0-9a-f:]+$/i.test(value)) return false; if ((value.match(/::/g) || []).length > 1) return false; const parts = value.split(':'); const filled = parts.filter(Boolean); if (filled.some((part) => part.length > 4)) return false; return value.includes('::') ? filled.length <= 7 : filled.length === 8; }\nconst forwarded = headers['cf-connecting-ip'] || headers['x-real-ip'] || headers['x-forwarded-for'] || '';\nconst candidate = String(forwarded).split(',')[0].trim().replace(/^\\[|\\]$/g, '');\nconst ip = isIpv4(candidate) || isIpv6(candidate) ? candidate : 'unknown';\nconst dayKey = new Date().toISOString().slice(0, 10);\nreturn [{ json: { ip, dayKey, systemKey: `system:${dayKey}`, ipKey: `ip:${dayKey}:${ip}` } }];"
+        "jsCode": "/**\n * Parses a strict dotted IPv4 address into octets, or returns null.\n * @param value Value to validate or store.\n */\nfunction ipv4Parts(value) {\n  const parts = value.split('.');\n  const valid = parts.length === 4 && parts.every(/** Checks whether this item satisfies the validation. @param part Current callback input. */ (part) => /^(0|[1-9]\\d{0,2})$/.test(part) && Number(part) <= 255);\n  return valid ? parts.map(Number) : null;\n}\n\n\n\n/**\n * Converts an embedded dotted IPv4 suffix to two IPv6 groups.\n * @param value Value to validate or store.\n */\nfunction expandDottedSuffix(value) {\n  if (!value.includes('.')) return value;\n  const boundary = value.lastIndexOf(':');\n  const parts = ipv4Parts(value.slice(boundary + 1));\n  if (boundary < 0 || !parts) return '';\n  return value.slice(0, boundary + 1) + ((parts[0] << 8) | parts[1]).toString(16)\n    + ':' + ((parts[2] << 8) | parts[3]).toString(16);\n}\n\n\n\n/**\n * Expands a valid IPv6 address to exactly eight numeric groups.\n * @param value Value to validate or store.\n */\nfunction ipv6Parts(value) {\n  const expanded = expandDottedSuffix(value);\n  if (!expanded || !/^[\\da-f:]+$/i.test(expanded) || expanded.includes(':::')) return null;\n  const halves = expanded.split('::');\n  if (halves.length > 2) return null;\n  const left = halves[0] ? halves[0].split(':') : [];\n  const right = halves[1] ? halves[1].split(':') : [];\n  if ([...left, ...right].some(/** Checks whether this item meets the condition. @param part Current callback input. */ (part) => !/^[\\da-f]{1,4}$/i.test(part))) return null;\n  const missing = 8 - left.length - right.length;\n  if (halves.length === 1 && missing !== 0 || halves.length === 2 && missing < 1) return null;\n  return [...left, ...Array(missing).fill('0'), ...right].map(/** Maps the current item to its output value. @param part Current callback input. */ (part) => parseInt(part, 16));\n}\n\n\n\n/**\n * Returns one canonical quota identity, merging IPv4-mapped IPv6 with IPv4.\n * @param value Value to validate or store.\n */\nfunction normalizeIp(value) {\n  if (typeof value !== 'string' || value.length > 45) return null;\n  const candidate = value.trim();\n  const v4 = ipv4Parts(candidate);\n  if (v4) return v4.join('.');\n  const v6 = ipv6Parts(candidate);\n  if (!v6) return null;\n  if (v6.slice(0, 5).every(/** Checks whether this item satisfies the validation. @param part Current callback input. */ (part) => part === 0) && v6[5] === 65535) {\n    return [v6[6] >> 8, v6[6] & 255, v6[7] >> 8, v6[7] & 255].join('.');\n  }\n  return v6.map(/** Maps the current item to its output value. @param part Current callback input. */ (part) => part.toString(16).padStart(4, '0')).join(':');\n}\n\n\n\n/**\n * Reads only the single client-IP header overwritten by the configured trusted proxy.\n * @param headers Incoming request headers.\n * @param trustedHeader Single client-IP header overwritten by the trusted proxy.\n */\nfunction clientIp(headers, trustedHeader) {\n  if (!['cf-connecting-ip', 'x-real-ip'].includes(trustedHeader)) return null;\n  const entry = Object.entries(headers).find(/** Checks whether the current item is the requested match. @param [name] Current callback input. */ ([name]) => name.toLowerCase() === trustedHeader);\n  return normalizeIp(entry?.[1]);\n}\n\n\n\n/**\n * Parses a bounded positive amount in the units accepted by the ingredient form.\n * @param value Value to validate or store.\n */\nfunction parseAmount(value) {\n  if (typeof value !== 'string' || value.length > 30) return null;\n  const match = value.trim().match(/^(\\d+(?:[.,]\\d+)?)\\s*(g|ml|piece|pieces)?$/i);\n  if (!match) return null;\n  const amount = Number(match[1].replace(',', '.'));\n  const unit = (match[2] || '').toLowerCase().replace(/^pieces?$/, '');\n  return Number.isFinite(amount) && amount > 0 && amount <= 10000 ? { amount, unit } : null;\n}\n\n\n\n/**\n * Returns whether an ingredient contains a valid name and positive quantity.\n * @param entry Ingredient entry to validate.\n */\nfunction validIngredient(entry) {\n  if (typeof entry?.ingredient !== 'string') return false;\n  const name = entry.ingredient.trim();\n  return name.length > 0 && name.length <= 80 && /[\\p{L}]/u.test(name)\n    && /^[\\p{L}\\p{N} .,'’()\\-/]+$/u.test(name) && !!parseAmount(entry.servingSize);\n}\n\n\n\n/**\n * Normalizes a food name for exact ingredient coverage and duplicate checks.\n * @param entry Ingredient entry to validate.\n */\nfunction foodName(entry) {\n  return String(entry?.ingredient ?? '').trim().toLowerCase();\n}\n\n\n\n/**\n * Rejects known animal ingredients for vegetarian and vegan requests.\n * @param entry Ingredient entry to validate.\n * @param diet Selected dietary preference.\n */\nfunction violatesDiet(entry, diet) {\n  const name = foodName(entry);\n  const meat = /\\b(chicken|beef|pork|bacon|ham|salami|pastrami|lamb|turkey|duck|fish|salmon|tuna|shrimp|prawn|anchov\\w*|gelatin\\w*|lard|meat|sausage|huhn|hähnchen|rind\\w*|schwein\\w*|speck|schinken|fisch|lachs|thunfisch|garnele\\w*|wurst)\\b/i;\n  const dairy = /\\b(egg\\w*|milk|cream|butter|cheese|yogu?rt|honey|whey|casein|ghee|parmesan|mozzarella|feta|ei|eier|milch|sahne|käse|honig|joghurt|quark)\\b/i;\n  const plantDairy = /\\b(soy|soja|oat|hafer|almond|mandel|coconut|kokos|peanut|erdnuss|cashew|vegan|plant)\\w*\\b/i;\n  if (!['vegetarian', 'vegan'].includes(diet)) return false;\n  if (meat.test(name)) return true;\n  return diet === 'vegan' && dairy.test(name) && !plantDairy.test(name);\n}\n\n\n\n/**\n * Validates request choices without coercing arbitrary values to valid input.\n * @param request Validated recipe requirements.\n */\nfunction requestErrors(request) {\n  const errors = [];\n  if (!Number.isInteger(request.portionsAmount) || request.portionsAmount < 1 || request.portionsAmount > 12) errors.push('Portions must be between 1 and 12.');\n  if (!Number.isInteger(request.cooksAmount) || request.cooksAmount < 1 || request.cooksAmount > 3) errors.push('Cooks must be between 1 and 3.');\n  if (!['quick', 'medium', 'complex'].includes(request.cookingTime)) errors.push('Invalid cooking time.');\n  if (!['german', 'italian', 'japanese', 'indian', 'gourmet', 'fusion'].includes(request.cuisine)) errors.push('Invalid cuisine.');\n  if (!['vegetarian', 'vegan', 'keto', 'no preferences'].includes(request.dietPreferences)) errors.push('Invalid diet preference.');\n  return [...errors, ...ingredientErrors(request)];\n}\n\n\n\n/**\n * Checks ingredient bounds, duplicate names and achievable diet-compatible coverage.\n * @param request Validated recipe requirements.\n */\nfunction ingredientErrors(request) {\n  const entries = request.ingredients;\n  if (!Array.isArray(entries) || entries.length < 1 || entries.length > 30) return ['Please provide between 1 and 30 ingredients.'];\n  if (entries.some(/** Checks whether this item meets the condition. @param entry Current callback input. */ (entry) => !validIngredient(entry))) return ['Every ingredient needs a valid name and a positive amount (g, ml or pieces).'];\n  if (new Set(entries.map(foodName)).size !== entries.length) return ['Please combine duplicate ingredients.'];\n  const compatible = entries.filter(/** Checks whether the current item matches the filter. @param entry Current callback input. */ (entry) => !violatesDiet(entry, request.dietPreferences));\n  return compatible.length < Math.ceil(entries.length * 0.7)\n    ? ['Your ingredients do not allow 70% coverage with the selected diet. Please adjust ingredients or diet.'] : [];\n}\n\n\n\n/**\n * Builds a sanitized request context; absent proxy configuration fails closed.\n * @param item Webhook input item.\n * @param config Configuration for this operation.\n * @param now Current time in milliseconds.\n * @param statusOnly Whether only the quota endpoint is being validated.\n */\nfunction validateRequest(item, config, now = Date.now(), statusOnly = false) {\n  const request = item.body && typeof item.body === 'object' ? item.body : {};\n  const errors = statusOnly ? [] : requestErrors(request);\n  const ip = clientIp(item.headers ?? {}, config.trustedIpHeader);\n  if (!ip) errors.push('A verified client IP is unavailable. Please contact the site operator.');\n  if (!statusOnly && !/^models\\/gemini-[\\w.-]+$/.test(config.modelName ?? '')) errors.push('The recipe model is not configured. Please contact the site operator.');\n  const dayKey = new Date(now).toISOString().slice(0, 10);\n  const ipKey = ip?.replaceAll('.', '_').replaceAll(':', '_') ?? '';\n  return { request, ipKey, dayKey, valid: errors.length === 0, errors };\n}\n\n\n\nreturn [{ json: validateRequest($('Recipe Request').first().json, $input.first().json, Date.now(), true) }];"
       },
-      "notes": "Creates system and per-IP daily keys.",
-      "notesInFlow": true
-    },
-    {
-      "id": "status-system-read",
-      "name": "Read Status System Quota",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "position": [
-        -260,
-        0
-      ],
-      "alwaysOutputData": true,
-      "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "SET_QUOTA_TABLE_ID",
-          "mode": "id"
-        },
-        "matchType": "allConditions",
-        "filters": {
-          "conditions": [
-            {
-              "keyName": "quotaKey",
-              "keyValue": "={{ $json.systemKey }}"
-            }
-          ]
-        },
-      "returnAll": true
-    },
-    "alwaysOutputData": true,
-      "notes": "Reads shared daily quota for the status endpoint.",
-      "notesInFlow": true
-    },
-    {
-      "id": "status-system-normalize",
-      "name": "Normalize Status System",
+      "id": "59b45de1-534e-410f-8c33-bbfc9f08b23c",
+      "name": "Validate Request",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -40,
-        0
+        1312,
+        80
       ],
-      "parameters": {
-        "jsCode": "const row = $input.first().json;\nconst context = $('Build Quota Keys').first().json;\nreturn [{ json: { ...context, systemUsed: Number(row.quota || 0) } }];"
-      },
-      "notes": "Normalizes the system status row.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Checks positive quantities, choices and a canonical IP before any AI cost."
     },
     {
-      "id": "status-ip-read",
-      "name": "Read Status IP Quota",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "position": [
-        180,
-        0
-      ],
-      "alwaysOutputData": true,
       "parameters": {
-        "operation": "get",
-        "dataTableId": {
-          "__rl": true,
-          "value": "SET_QUOTA_TABLE_ID",
-          "mode": "id"
-        },
-        "matchType": "allConditions",
-        "filters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
           "conditions": [
             {
-              "keyName": "quotaKey",
-              "keyValue": "={{ $json.ipKey }}"
+              "leftValue": "={{ $json.valid }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "bfff7055-b21c-4757-99a0-725855e452ac",
+      "name": "Request Valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1536,
+        80
+      ],
+      "notesInFlow": true,
+      "notes": "Routes only a confirmed successful check."
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ detail: $json.errors.join(' '), quota: null }) }}",
+        "options": {
+          "responseCode": 400,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "cc3844fe-6534-4d25-8a0f-da5835be2590",
+      "name": "Return Validation Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1744,
+        320
+      ],
+      "notesInFlow": true,
+      "notes": "Returns a readable API result without exposing internal errors."
+    },
+    {
+      "parameters": {
+        "url": "={{ $('Backend Configuration').first().json.quotaUrl }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googleFirebaseRealtimeDatabaseOAuth2Api",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Firebase-ETag",
+              "value": "true"
             }
           ]
         },
-      "returnAll": true
-    },
-    "alwaysOutputData": true,
-      "notes": "Reads caller-IP quota for the status endpoint.",
-      "notesInFlow": true
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true,
+              "responseFormat": "json"
+            }
+          },
+          "timeout": 15000
+        }
+      },
+      "id": "8d614ca6-1714-479c-a96f-8bf569b14ca3",
+      "name": "Read Atomic Quota",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1744,
+        80
+      ],
+      "notesInFlow": true,
+      "credentials": {
+        "googleFirebaseRealtimeDatabaseOAuth2Api": {
+          "id": "26PtpQPZOyan1SZC",
+          "name": "Google Firebase Realtime Database account"
+        }
+      },
+      "onError": "continueErrorOutput",
+      "notes": "Select the real Firebase OAuth2 credential in n8n. Never enable automatic retries of a reservation."
     },
     {
-      "id": "status-build",
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ detail: 'The backend could not finish this request. Recipe slots may remain reserved for today to prevent repeated charges.', quota: null }) }}",
+        "options": {
+          "responseCode": 503,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
+        }
+      },
+      "id": "8e2dfecc-9a2b-4d22-ba39-2fde54f4ebc3",
+      "name": "Return Backend Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        1968,
+        688
+      ],
+      "notesInFlow": true,
+      "notes": "Returns a readable API result without exposing internal errors."
+    },
+    {
+      "parameters": {
+        "errorMessage": "Code a Cuisine backend failure. Inspect the failing node; do not log credentials or request bodies."
+      },
+      "id": "3bc45caa-adb2-44e3-a584-e9509d2f0b5a",
+      "name": "Log Technical Failure",
+      "type": "n8n-nodes-base.stopAndError",
+      "typeVersion": 1,
+      "position": [
+        2192,
+        688
+      ],
+      "notesInFlow": true,
+      "notes": "Marks handled infrastructure/model failures as failed so the configured Error Workflow runs."
+    },
+    {
+      "parameters": {
+        "jsCode": "const RECIPE_COST = 3;\nconst IP_LIMIT = 3;\nconst SYSTEM_LIMIT = 12;\nconst RATE_WINDOW_MS = 10000;\n\n/**\n * Validates a persisted quota counter; corrupted state must never reset silently.\n * @param value Value to validate or store.\n */\nfunction quotaCount(value) {\n  if (value === undefined) return 0;\n  if (!Number.isSafeInteger(value) || value < 0) throw new Error('Invalid quota state.');\n  return value;\n}\n\n\n\n/**\n * Returns a UTC-day snapshot with all counters expressed in recipes.\n * @param state Persisted quota state.\n * @param context Request identity and quota context.\n */\nfunction quotaStatus(state, context) {\n  const day = state?.days?.[context.dayKey];\n  const ipUsed = quotaCount(day?.ips?.[context.ipKey]);\n  const systemUsed = quotaCount(day?.used);\n  return { ipLimit: IP_LIMIT, ipUsed, ipRemaining: Math.max(0, IP_LIMIT - ipUsed),\n    systemLimit: SYSTEM_LIMIT, systemUsed, systemRemaining: Math.max(0, SYSTEM_LIMIT - systemUsed) };\n}\n\n\n\n/**\n * Builds a reservation proposal that can only be committed with the matching Firebase ETag.\n * @param state Persisted quota state.\n * @param context Request identity and quota context.\n * @param now Current time in milliseconds.\n */\nfunction reserveQuota(state, context, now = Date.now()) {\n  const quota = quotaStatus(state, context);\n  const lastRequest = quotaCount(state?.lastRequests?.[context.ipKey]);\n  if (lastRequest && now - lastRequest < RATE_WINDOW_MS) return { allowed: false, quota, detail: 'Too many requests. Please wait 10 seconds.' };\n  if (quota.ipRemaining < RECIPE_COST || quota.systemRemaining < RECIPE_COST) {\n    return { allowed: false, quota, detail: 'Daily recipe quota exceeded. Each request reserves 3 recipes. Please try again tomorrow (UTC).' };\n  }\n  const nextState = incrementReservation(state, context, now);\n  return { allowed: true, nextState, quota: quotaStatus(nextState, context) };\n}\n\n\n\n/**\n * Copies all existing state and increments both quotas and the throttle atomically.\n * @param state Persisted quota state.\n * @param context Request identity and quota context.\n * @param now Current time in milliseconds.\n */\nfunction incrementReservation(state, context, now) {\n  const next = JSON.parse(JSON.stringify(state ?? { days: {}, lastRequests: {} }));\n  next.days ??= {};\n  next.lastRequests ??= {};\n  const day = next.days[context.dayKey] ?? { used: 0, ips: {} };\n  day.ips ??= {};\n  day.used = quotaCount(day.used) + RECIPE_COST;\n  day.ips[context.ipKey] = quotaCount(day.ips[context.ipKey]) + RECIPE_COST;\n  next.days[context.dayKey] = day;\n  next.lastRequests[context.ipKey] = now;\n  return next;\n}\n\n\n\n/**\n * Rejects failed, malformed or unversioned Firebase reads before any paid operation.\n * @param response HTTP response to inspect.\n */\nfunction quotaRead(response) {\n  if (response.statusCode !== 200 || !response.headers?.etag) throw new Error('Quota storage is unavailable.');\n  const state = response.body;\n  if (state !== null && (!state || typeof state !== 'object' || Array.isArray(state))) throw new Error('Invalid quota state.');\n  if (state !== null && (!state.days || !state.lastRequests)) throw new Error('Incomplete quota state.');\n  return state;\n}\n\n\n\nconst context = $('Validate Request').first().json;\nreturn [{ json: quotaStatus(quotaRead($input.first().json), context) }];"
+      },
+      "id": "7e71ae33-46f0-4fd1-b2e1-6d74467a407b",
       "name": "Build Quota Status",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        400,
-        0
+        1968,
+        80
       ],
-      "parameters": {
-        "jsCode": "const row = $input.first().json;\nconst context = $('Normalize Status System').first().json;\nconst ipUsed = Number(row.quota || 0);\nreturn [{ json: {\n  ipLimit: 3, ipUsed, ipRemaining: Math.max(0, 3 - ipUsed),\n  systemLimit: 12, systemUsed: context.systemUsed,\n  systemRemaining: Math.max(0, 12 - context.systemUsed),\n} }];"
-      },
-      "notes": "Builds remaining recipe-slot values (3/IP/day and 12/system/day) for the frontend.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "onError": "continueErrorOutput",
+      "notes": "Reports remaining recipe slots from the same state used by reservations."
     },
     {
-      "id": "status-response",
-      "name": "Return Quota Status",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.4,
-      "position": [
-        620,
-        0
-      ],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={{ $json }}",
         "options": {
-          "responseCode": 200
+          "responseCode": 200,
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Cache-Control",
+                "value": "no-store"
+              }
+            ]
+          }
         }
       },
-      "notes": "Returns the non-consuming quota snapshot.",
-      "notesInFlow": true
+      "id": "b7e2b684-8d55-4320-99ec-cf78d7f6e1f3",
+      "name": "Return Quota Status",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        2192,
+        80
+      ],
+      "notesInFlow": true,
+      "notes": "Returns a readable API result without exposing internal errors."
     }
   ],
+  "pinData": {},
   "connections": {
-    "Quota Status Request": {
+    "Return Backend Error": {
       "main": [
         [
           {
-            "node": "Build Quota Keys",
+            "node": "Log Technical Failure",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Build Quota Keys": {
+    "Recipe Request": {
       "main": [
         [
           {
-            "node": "Read Status System Quota",
+            "node": "Backend Configuration",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Read Status System Quota": {
+    "Backend Configuration": {
       "main": [
         [
           {
-            "node": "Normalize Status System",
+            "node": "Validate Request",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Normalize Status System": {
+    "Validate Request": {
       "main": [
         [
           {
-            "node": "Read Status IP Quota",
+            "node": "Request Valid?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Read Status IP Quota": {
+    "Request Valid?": {
+      "main": [
+        [
+          {
+            "node": "Read Atomic Quota",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Validation Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Atomic Quota": {
       "main": [
         [
           {
             "node": "Build Quota Status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return Backend Error",
             "type": "main",
             "index": 0
           }
@@ -212,13 +330,32 @@
             "type": "main",
             "index": 0
           }
+        ],
+        [
+          {
+            "node": "Return Backend Error",
+            "type": "main",
+            "index": 0
+          }
         ]
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed",
+    "errorWorkflow": "kCD1jJO2WgxZWRgN",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "saveDataErrorExecution": "all"
   },
+  "versionId": "8960cc0a-79ab-4053-a0dc-0dbaf9308abf",
+  "meta": {
+    "instanceId": "ad9b5daf0dfb5719b0175233d6e06f24f3f3493d07a52c5757f0d24f1abb78ab"
+  },
+  "nodeGroups": [],
+  "id": "yBnnpHc4mZgvn8tn",
   "tags": []
 }
