@@ -279,3 +279,16 @@
 }
 
 @media (max-width: 767px) { .cookbook-new { margin-inline: auto; } }
+
+.cuisine-photo { overflow: hidden; aspect-ratio: 1; border-radius: 16px; }
+.cuisine-photo img { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 300ms ease; }
+.cuisine-icon { display: inline-block; transform-origin: center bottom; transition: transform 300ms ease; }
+.cuisine-category:focus-visible .cuisine-photo img { transform: scale(1.06); }
+.cuisine-category:focus-visible .cuisine-icon { transform: translateY(-3px) rotate(-8deg); }
+@media (hover: hover) and (pointer: fine) and (min-width: 768px) {
+  .cuisine-category:hover .cuisine-photo img { transform: scale(1.06); }
+  .cuisine-category:hover .cuisine-icon { transform: translateY(-3px) rotate(-8deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cuisine-grid .cuisine-category .cuisine-photo img, .cuisine-grid .cuisine-category .cuisine-icon { transition: none; transform: none; }
+}

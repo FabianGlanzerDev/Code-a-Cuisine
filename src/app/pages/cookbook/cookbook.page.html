@@ -38,10 +38,10 @@
 
     <section class="cuisine-grid" aria-label="Cuisine categories">
       @for (cuisine of cookbookCuisines; track cuisine.name) {
-      <a [routerLink]="['/recipes-list']" [queryParams]="{ cuisine: cuisine.name }">
+      <a class="cuisine-category" [routerLink]="['/recipes-list']" [queryParams]="{ cuisine: cuisine.name }">
         <figure>
-          <figcaption>{{ cuisine.name }} cuisine {{ cuisine.emoji }}</figcaption>
-          <img [src]="cuisine.thumbnailImage" [alt]="cuisine.name + ' cuisine'">
+          <figcaption>{{ cuisine.name }} cuisine <span class="cuisine-icon" aria-hidden="true">{{ cuisine.emoji }}</span></figcaption>
+          <div class="cuisine-photo"><img [src]="cuisine.thumbnailImage" [alt]="cuisine.name + ' cuisine'"></div>
         </figure>
       </a>
       }
