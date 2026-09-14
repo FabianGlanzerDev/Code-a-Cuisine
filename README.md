@@ -67,3 +67,9 @@ Die bisherige Pflicht zur Katalogmitgliedschaft ist in Frontend und Backend entf
 Geprueft: 152 Angular-Tests, 64 Backendtests einschliesslich #114/#136 und echter Export-Code-Nodes; Browserablauf mit sechs freien Namen, Bearbeiten, Preferences, F5/Zurueck sowie Tastatur-, Maus- und Touchauswahl. Keine echte Modellanfrage. Fuer die genaue historische Invalid-Input-Ursache fehlen weiterhin die betroffene Ausfuehrung mit Request, fehlgeschlagenem Node und dessen Fehlerausgabe.
 
 Der aktualisierte Generator-Export und der Frontendbuild muessen gemeinsam uebernommen werden. Der Status-Export wurde wegen der eingebetteten gemeinsamen Bibliothek mitgebaut; seine Quotenfunktion ist unveraendert. Error Logger ist unveraendert.
+
+## Home: Teller durchgehend rechts
+
+Die widerspruechlichen Einspalten-, Portrait- und Hoehenregeln wurden durch ein durchgehendes Zweispaltenraster ersetzt. Das vorhandene Bild bleibt proportional in einer eigenen rechten Bildflaeche; nur dort wird der vorgesehene Ausschnitt begrenzt. Die globale Bild-Maximalbreite hatte das Ausgleichen des rechten Seitenabstands verhindert. Der Bildcontainer darf jetzt bis in diesen Seitenabstand reichen. Keine globale Scrollsperre und keine feste Gesamthoehe; niedrige Fenster koennen vertikal scrollen. Der bestehende Widescreen-Assetwechsel bleibt erhalten.
+
+Browserpruefung: 142 Resize-Schritte und Grenzfaelle, darunter 1282x1151, iPad Mini 768x1024/1024x768, kleine Smartphones und Widescreen; keine Textueberdeckung und kein horizontaler Dokumentueberlauf. Zusaetzlich 15 Home-Ansichten mit F5 und direkte Hash-Routen aller neun Seiten auf einem statischen Server ohne SPA-Fallback geprueft. Lokale Ubuntu-/Quicksand-Fonts wurden im Browser bestaetigt. Keine pauschale Pixelgleichheit mit Figma behauptet. Produktionsbuild erfolgreich; sechs bestehende CSS-Budgetwarnungen, keine Budgetfehler.
