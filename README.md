@@ -52,6 +52,6 @@ Die drei konfigurierten n8n-Importdateien und Übernahmeschritte stehen in [n8n/
 
 144 Angular-Tests, 59 Backendtests einschließlich Originalfällen #114/#136, Workflow-Konsistenz und Stilprüfung bestanden. Produktionsbuild erfolgreich mit sechs CSS-Budgetwarnungen. Browserprüfung: 135 Seiten-/Viewportfälle ohne Dokumentüberlauf; zusätzliche Button-, Navigations- und Home-Prüfungen bei 320/375/390/768/1440 px, 1024×600, 2560×1440, 3440×1440 und 3840×2160. Direkte Hash-Routen und F5 auf statischem Server ohne SPA-Fallback geprüft. Backendantworten wurden simuliert, vorhandene Originalrezepte als Fixtures verwendet; keine kostenpflichtige Generierung oder Produktionsschreibzugriffe.
 
-Belegte Figma-Schriftwerte und fehlende Angaben: [docs/mobile-figma-values.md](docs/mobile-figma-values.md). Logo-Position erhalten; mobile Listen abwechselnd hinterlegt, Cookbook-Button zentriert und Zurückpfeile ausgerichtet. Zusätzliche Teller nur ab 2560 px und mindestens 2:1.
+Logo-Position erhalten; mobile Listen abwechselnd hinterlegt, Cookbook-Button zentriert und Zurückpfeile ausgerichtet. Zusätzliche Teller nur ab 2560 px und mindestens 2:1.
 
 Offen bleiben der veröffentlichte Stand nach Betreiber-Upload, ein bestätigter aktueller Live-Durchlauf einschließlich Speicherung, nicht belegte Figma-Schriftwerte und die fachliche Portionsregel. Lokale Tests sind keine pauschale Abgabefreigabe. Build, temporäre Prüfberichte und Screenshots sind nicht versioniert; Lizenzen und Regressionstests bleiben erhalten.
