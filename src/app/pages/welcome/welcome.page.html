@@ -5,7 +5,7 @@
     <div class="welcome-content">
       <div class="welcome-copy">
         <div>
-          <p class="welcome-tagline">AI-Powered recipe generator</p>
+          <p class="welcome-tagline"><span class="welcome-tagline-part">AI-Powered</span> recipe generator</p>
           <h1>Code à Cuisine</h1>
           <a class="button button--cream welcome-start" routerLink="/generate-recipe">Get started</a>
         </div>
@@ -19,11 +19,14 @@
         </div>
       </div>
 
-      <img class="welcome-visual" src="img/Visuals.webp" alt="Illustrated dishes and ingredients">
     </div>
     <nav class="welcome-legal" aria-label="Rechtliche Informationen">
       <a routerLink="/imprint">Impressum</a>
       <a routerLink="/datenschutz">Datenschutz</a>
     </nav>
+    <picture class="welcome-picture">
+      <source media="(min-width: 2560px) and (min-aspect-ratio: 2/1)" srcset="img/Visuals-widescreen.webp">
+      <img class="welcome-visual" src="img/Visuals.webp" alt="Illustrated dishes and ingredients">
+    </picture>
   </div>
 </main>
