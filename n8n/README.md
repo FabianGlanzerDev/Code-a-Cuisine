@@ -17,7 +17,7 @@ Der Error Logger gibt eine feste bereinigte Meldung mit Ausführungs-/Workflowke
 ## Validierung und Quoten
 
 - Salami und konkrete Blattsalate sind enthalten. Der gemeinsame Alias-Katalog vereinheitlicht deutsche/englische Namen und erkennt doppelte Zutaten. Paprika als Eingabe bezeichnet Bell pepper, Paprikapulver die Gewuerzzutat Paprika powder. Bestehende Modellantworten mit paprika in den Extra-Zutaten werden als Gewuerz normalisiert.
-- Eingaben werden vor Quotenreservierung und Modellaufruf geprüft: bekannte Zutaten aus `src/app/data/ingredients.json`, gültige Einheiten, positive Mengen und zulässige Präferenzen.
+- Eingaben werden vor Quotenreservierung und Modellaufruf geprüft: freie Namen bis 80 Zeichen ohne Steuerzeichen, maximal 30 Zutaten, gültige Einheiten, positive Mengen bis 10000 und zulässige Präferenzen. Der Katalog ist nur eine Vorschlagshilfe, keine Pflichtliste.
 - `INVALID_RECIPE_INPUT` (HTTP 400) öffnet das Eingabe-Popup. `INSUFFICIENT_INGREDIENT_QUANTITIES` bleibt für eine fachlich bestätigte Mengenregel reserviert. Die Policy ist deaktiviert (`not_assessed`); es gibt keine erfundenen Portionsgrenzen oder Stück-/Gramm-Umrechnungen.
 - Eine Generierung reserviert atomar drei Plätze: drei pro IP und zwölf systemweit pro UTC-Tag. Unbestätigte Reservierungen starten keinen Modellaufruf. Reservierte Plätze werden bei Modellfehlern nicht freigegeben. Produktionszähler nicht zurücksetzen.
 - Genau drei Alternativen mit unabhängiger Mengenprüfung. Vegetable oil wird gezielt zu oil normalisiert; Vegetable broth ist keine erlaubte Wasser-Alternative. Zutatenlimit und Ernährungsprüfungen bleiben erhalten.
@@ -40,3 +40,5 @@ npm run n8n:check
 Regeln und Emulator: [../firebase/README.md](../firebase/README.md). Lokale Tests bestätigen weder aktuelle Serverregeln noch einen erfolgreichen Live-Durchlauf mit Modell und Speicherung. Frontend-Upload und Hash-Routing: [../README.md](../README.md).
 
 Fuer diese Korrekturen ist der aktualisierte Generator-Export zu uebernehmen. Quota Status und Error Logger benoetigen gegenueber den zuletzt gelieferten Versionen keine funktionale Umstellung; sie bleiben als eindeutige aktuelle Importdateien dokumentiert. Der Status-Export enthaelt den aktualisierten gemeinsamen Validierungsquelltext, ohne die Quotenentscheidung zu aendern.
+
+Freitext wird im Modellrequest als JSON-Nutzerdaten getrennt von der Systemanweisung transportiert. Die Outputvalidierung vergleicht eigene Rezeptzutaten mit dem tatsaechlichen Request; unbekannte Namen bleiben erhalten. Quoten, drei Alternativen, Zeitplan- und Naehrwertpruefungen bleiben aktiv. Offline wurden auch die Code-Nodes des endgueltigen Exports mit freien Namen und ungueltigen Eingaben ausgefuehrt. Das ist kein Nachweis einer erfolgreichen Live-Generierung.

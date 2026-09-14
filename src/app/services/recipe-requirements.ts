@@ -1,3 +1,4 @@
+import { ingredientInputError } from './ingredient-input';
 import { RecipeRequirements, IngredientEntry } from '../models/recipe.model';
 import { COOKING_TIMES, CUISINES, DIET_PREFERENCES } from '../data/preferences.data';
 
@@ -5,7 +6,7 @@ import { COOKING_TIMES, CUISINES, DIET_PREFERENCES } from '../data/preferences.d
 export function validEntry(entry: IngredientEntry): boolean {
   if (!entry || typeof entry.ingredient !== 'string' || !entry.ingredient.trim() || typeof entry.servingSize !== 'string') return false;
   const amount = entry.servingSize.match(/^(\d+(?:\.\d+)?)(g|ml)?$/);
-  return !!amount && Number(amount[1]) > 0 && Number(amount[1]) <= 10000 && typeof entry.isEditMode === 'boolean';
+  return !!amount && !ingredientInputError(entry.ingredient, Number(amount[1]), amount[2] ?? '') && typeof entry.isEditMode === 'boolean';
 }
 
 

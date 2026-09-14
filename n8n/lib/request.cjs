@@ -21,8 +21,8 @@ function requestErrors(request) {
 function ingredientErrors(request) {
   const entries = request.ingredients;
   if (!Array.isArray(entries) || entries.length < 1 || entries.length > 30) return ['Please provide between 1 and 30 ingredients.'];
-  if (entries.some(/** Checks whether this item meets the condition. @param entry Current callback input. */ (entry) => !validIngredient(entry))) return ['Every ingredient needs a valid name and a positive amount (g, ml or pieces).'];
-  if (entries.some(/** Checks catalog membership. @param entry Submitted food. */ entry => !INGREDIENT_CATALOG.some(/** Matches a known name. @param food Catalog entry. */ food => food.toLowerCase() === foodName(entry)))) return ['Unknown food in the English/German ingredient list. Check spelling, use a suggestion or ask the site owner to add this ingredient.'];
+  const invalid = entries.findIndex(/** Locates the input that needs correction. @param entry Submitted ingredient. */ entry => !validIngredient(entry));
+  if (invalid >= 0) return [`Ingredient ${invalid + 1}: enter a nonempty name up to 80 characters and a positive amount up to 10000 in g, ml or pieces.`];
   if (new Set(entries.map(foodName)).size !== entries.length) return ['Please combine duplicate ingredients.'];
   const compatible = entries.filter(/** Checks whether the current item matches the filter. @param entry Current callback input. */ (entry) => !violatesDiet(entry, request.dietPreferences));
   return compatible.length < Math.ceil(entries.length * 0.7)

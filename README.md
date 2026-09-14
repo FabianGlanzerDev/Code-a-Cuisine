@@ -59,3 +59,11 @@ Live-Pruefung am 14. September 2026: main-ZOYSY7DF.js nutzt die richtigen Produk
 Salami und Blattsalate sind im gemeinsamen Katalog. Deutsche/englische Aliase erscheinen einmal unter englischem Namen; Paprika (Gemuese) wird Bell pepper, Paprikapulver wird Paprika powder. Backend und Frontend verwenden dieselbe Identitaet, mit unveraenderten Ernaehrungsregeln. Dafuer den aktuellen Generator-Export zusammen mit dem Frontend uebernehmen. Quota Status und Error Logger bleiben eigenstaendige Funktionen; genau drei Importdateien liegen unter n8n/exports. Die allgemeinen doppelten Vorlagen wurden entfernt und werden nicht erneut erzeugt.
 
 Offen: Kontrolle nach Betreiber-Upload und ein bestaetigter Live-Durchlauf bis zur Speicherung. Die fachliche Portionsregel bleibt deaktiviert. Die Schrittueberschriften sind zur Lesbarkeit fett gesetzt; die Screenshots belegen 18px/500 fuer den Fliesstext, nicht exakt das Gewicht der Ueberschrift. Keine vollstaendige Figma-Pixelgleichheit behauptet. Error-Logger-Mail bleibt wie geliefert deaktiviert. Build und temporaere Pruefartefakte werden nicht versioniert; Tests, Lizenzen und notwendige Dokumentation bleiben erhalten.
+
+## Freie Zutaten (14. September 2026)
+
+Die bisherige Pflicht zur Katalogmitgliedschaft ist in Frontend und Backend entfernt. Vorschlaege bleiben optional; unbekannte Namen bleiben erhalten. Hinzufuegen, Namensbearbeitung und gespeicherte Eingaben verwenden dieselben grundlegenden Namens-, Mengen- und Einheitenregeln. Bekannte Aliase werden weiterhin normalisiert; Bell pepper und Paprika powder bleiben getrennt. Ganze Vorschlagszeilen sind mit Maus, Touch und Tastatur bedienbar; Enter fuegt nicht doppelt hinzu.
+
+Geprueft: 152 Angular-Tests, 64 Backendtests einschliesslich #114/#136 und echter Export-Code-Nodes; Browserablauf mit sechs freien Namen, Bearbeiten, Preferences, F5/Zurueck sowie Tastatur-, Maus- und Touchauswahl. Keine echte Modellanfrage. Fuer die genaue historische Invalid-Input-Ursache fehlen weiterhin die betroffene Ausfuehrung mit Request, fehlgeschlagenem Node und dessen Fehlerausgabe.
+
+Der aktualisierte Generator-Export und der Frontendbuild muessen gemeinsam uebernommen werden. Der Status-Export wurde wegen der eingebetteten gemeinsamen Bibliothek mitgebaut; seine Quotenfunktion ist unveraendert. Error Logger ist unveraendert.

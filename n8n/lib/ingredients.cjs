@@ -24,7 +24,7 @@ function validIngredient(entry) {
   if (typeof entry?.ingredient !== 'string') return false;
   const name = entry.ingredient.trim();
   return name.length > 0 && name.length <= 80 && /[\p{L}]/u.test(name)
-    && /^[\p{L}\p{N} .,'’()\-/]+$/u.test(name) && !!parseAmount(entry.servingSize);
+    && !/[\u0000-\u001f\u007f]/u.test(name) && !!parseAmount(entry.servingSize);
 }
 
 
@@ -47,7 +47,7 @@ function foodName(entry) {
  */
 function violatesDiet(entry, diet) {
   const name = foodName(entry);
-  const meat = /\b(chicken|beef|pork|bacon|ham|salami|pastrami|lamb|turkey|duck|fish|salmon|tuna|shrimp|prawn|anchov\w*|gelatin\w*|lard|meat|sausage|huhn|hähnchen|rind\w*|schwein\w*|speck|schinken|fisch|lachs|thunfisch|garnele\w*|wurst)\b/i;
+  const meat = /\b(chicken|beef|pork|bacon|ham|salami|pastrami|lamb|turkey|duck|fish|salmon|tuna|shrimp|prawn|anchov\w*|gelatin\w*|lard|meat|sausage|hackfleisch|puten\w*|huhn|hühnchen|hähnchen|rind\w*|schwein\w*|speck|schinken|fisch|lachs|thunfisch|garnele\w*|wurst)\b/i;
   const dairy = /\b(egg\w*|milk|cream|butter|cheese|yogu?rt|honey|whey|casein|ghee|parmesan|mozzarella|feta|ei|eier|milch|sahne|käse|honig|joghurt|quark)\b/i;
   const plantDairy = /\b(soy|soja|oat|hafer|almond|mandel|coconut|kokos|peanut|erdnuss|cashew|vegan|plant)\w*\b/i;
   if (!['vegetarian', 'vegan'].includes(diet)) return false;

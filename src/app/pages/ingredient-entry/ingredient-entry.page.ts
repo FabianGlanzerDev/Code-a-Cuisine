@@ -7,7 +7,7 @@ import { RecipeGeneratorService } from '../../services/recipe-generator.service'
 
 import { InputErrorDialogComponent } from '../../components/input-error-dialog.component';
 
-import ingredients from '../../data/ingredients.json';
+import { ingredientInputError } from '../../services/ingredient-input';
 import { canonicalIngredient, ingredientSuggestions } from '../../services/ingredient-catalog';
 
 interface UnitOption { name: string; abbreviation: string; }
@@ -25,17 +25,18 @@ export class IngredientEntryPage {
     { name: 'gram', abbreviation: 'g' },
   ];
 
-  private readonly knownIngredients = ingredients;
 
   selectedUnit = this.units[2];
   ingredientName = '';
   servingSize = 100;
+  suggestionsOpen = false;
   dropdownOpen = false;
   errorMessage = '';
   showInputPopup = false;
 
   editingIngredient: IngredientEntry | null = null;
   editServingSize = 1;
+  editIngredientName = '';
   editUnit = this.units[0];
   editUnitDropdownOpen = false;
 
@@ -109,6 +110,26 @@ export class IngredientEntryPage {
    */
   selectIngredientSuggestion(suggestion: string): void {
     this.ingredientName = suggestion;
+    this.suggestionsOpen = false;
+  }
+
+
+
+  /** Handles keyboard input without submitting twice. @param event Keyboard event. @param field Suggestion container. */
+  ingredientKey(event: KeyboardEvent, field: HTMLElement): void {
+    if (event.key === 'Escape') this.suggestionsOpen = false;
+    if (event.key === 'ArrowDown') {
+      event.preventDefault(); this.suggestionsOpen = true;
+      setTimeout(/** Focuses the first optional suggestion after rendering. */ () => field.querySelector<HTMLButtonElement>('.ingredient-suggestions button')?.focus());
+    }
+    if (event.key === 'Enter') { event.preventDefault(); if (!event.repeat) this.addIngredient(); }
+  }
+
+
+
+  /** Closes suggestions only when focus leaves the whole field. @param event Focus event. @param field Suggestion container. */
+  leaveSuggestions(event: FocusEvent, field: HTMLElement): void {
+    if (!field.contains(event.relatedTarget as Node | null)) this.suggestionsOpen = false;
   }
 
 
@@ -134,10 +155,8 @@ export class IngredientEntryPage {
    * @returns {string} The result of this operation.
    */
   private validateNewIngredient(name: string, amount: number): string {
-    if (!name || name.length > 80 || !/[\p{L}]/u.test(name) || !/^[\p{L}\p{N} .,'’()\-/]+$/u.test(name)) return 'Please enter a valid ingredient name (up to 80 characters).';
-    if (!this.knownIngredients.some(/** Matches a catalog name. @param food Known food. */ food => food.toLowerCase() === name.toLowerCase())) return 'This food is not in our English/German ingredient list yet. Check the spelling, use a suggestion or ask the site owner to add it. / Zutat noch unbekannt: Schreibweise prüfen oder Aufnahme anfragen.';
-    if (!this.units.includes(this.selectedUnit)) return 'Please select g, ml or pieces.';
-    if (!Number.isFinite(amount) || amount <= 0 || amount > 10000) return 'Please enter an amount greater than 0 and at most 10000.';
+    const error = ingredientInputError(name, amount, this.units.includes(this.selectedUnit) ? this.selectedUnit.abbreviation : 'invalid');
+    if (error) return error;
     const entries = this.generator.requirements.ingredients;
     if (entries.length >= 30) return 'You can add at most 30 ingredients.';
     if (entries.some(/** Checks whether this item meets the condition. @param entry Current callback input. */ (entry) => canonicalIngredient(entry.ingredient).toLowerCase() === name.toLowerCase())) return 'This ingredient is already listed. Edit its amount instead.';
@@ -157,6 +176,7 @@ export class IngredientEntryPage {
 
     const parsed = this.parseServingSize(ingredient.servingSize);
     this.editingIngredient = ingredient;
+    this.editIngredientName = ingredient.ingredient;
     this.editServingSize = parsed.amount;
     this.editUnit = parsed.unit;
     this.editUnitDropdownOpen = false;
@@ -171,14 +191,11 @@ export class IngredientEntryPage {
    */
   saveEdit(ingredient: IngredientEntry): void {
     const amount = Number(this.editServingSize);
-    if (!this.units.includes(this.editUnit)) { this.errorMessage = 'Please select g, ml or pieces.'; this.showInputPopup = true; return; }
-    if (!Number.isFinite(amount) || amount <= 0 || amount > 10000) {
-      this.errorMessage = 'Please enter an amount greater than 0 and at most 10000.';
-      this.showInputPopup = true;
-      return;
-    }
-    this.errorMessage = '';
-
+    const name = canonicalIngredient(this.editIngredientName);
+    this.errorMessage = ingredientInputError(name, amount, this.units.includes(this.editUnit) ? this.editUnit.abbreviation : 'invalid');
+    if (!this.errorMessage && this.generator.requirements.ingredients.some(/** Excludes this row from duplicate checking. @param entry Other ingredient. */ entry => entry !== ingredient && canonicalIngredient(entry.ingredient).toLowerCase() === name.toLowerCase())) this.errorMessage = 'This ingredient is already listed. Edit its amount instead.';
+    if (this.errorMessage) { this.showInputPopup = true; return; }
+    ingredient.ingredient = name;
     ingredient.servingSize = `${amount}${this.editUnit.abbreviation}`;
     ingredient.isEditMode = false;
     this.generator.saveDraft();

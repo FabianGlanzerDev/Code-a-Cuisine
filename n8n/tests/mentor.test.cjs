@@ -2,14 +2,13 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { validateRequest, request, reserveQuota, fixture, validateRecipes } = require('./helpers.cjs');
 
-test('direct webhook validation rejects fantasy foods before reserving quota', /** Verifies catalog rejection. */ () => {
-  for (const ingredient of ['fgsjsjgfj', 'dfahhah', 'Carrot fgsjsjgfj', 'Unknown real food']) {
+test('direct webhook validation accepts names outside the optional suggestion catalog', /** Verifies free-text acceptance. */ () => {
+  for (const ingredient of ['Salatblatt', 'Purple sprouting broccoli', 'Fresh garden sorrel']) {
     const body = request();
     body.ingredients[0].ingredient = ingredient;
     const result = validateRequest({ body, headers: { 'x-real-ip': '192.0.2.1' } },
       { trustedIpHeader: 'x-real-ip', modelName: 'models/gemini-test' });
-    assert.equal(result.valid, false);
-    assert.match(result.errors.join(' '), /Check spelling/);
+    assert.equal(result.valid, true, JSON.stringify(result.errors));
   }
 });
 

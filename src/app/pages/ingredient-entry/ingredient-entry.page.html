@@ -10,15 +10,17 @@
     <div class="ingredient-workspace">
       <div class="ingredient-grid">
         <form class="ingredient-card" (ngSubmit)="addIngredient()">
-          <div class="field ingredient-field">
+          <div #ingredientField class="field ingredient-field" (focusout)="leaveSuggestions($event, ingredientField)">
             <label for="ingredient">Ingredient</label>
             <input id="ingredient" name="ingredient" type="text" autocomplete="off" required
-              [(ngModel)]="ingredientName">
+              [(ngModel)]="ingredientName" maxlength="80" (focus)="suggestionsOpen = true" (input)="suggestionsOpen = true"
+              (keydown)="ingredientKey($event, ingredientField)" aria-autocomplete="list" aria-controls="ingredient-suggestions"
+              [attr.aria-expanded]="suggestionsOpen && ingredientSuggestions.length > 0">
 
-            @if (ingredientSuggestions.length) {
-            <div class="ingredient-suggestions" aria-label="Ingredient suggestions">
+            @if (suggestionsOpen && ingredientSuggestions.length) {
+            <div id="ingredient-suggestions" class="ingredient-suggestions" aria-label="Ingredient suggestions">
               @for (suggestion of ingredientSuggestions; track suggestion) {
-              <button type="button" (click)="selectIngredientSuggestion(suggestion)">
+              <button type="button" (click)="ingredientField.querySelector('input')?.focus(); selectIngredientSuggestion(suggestion)">
                 {{ suggestion }}
               </button>
               }
@@ -89,7 +91,7 @@
                   }
                 </div>
 
-                <span class="ingredient-name ingredient-name--editing">{{ ingredient.ingredient }}</span>
+                <input class="ingredient-name ingredient-name--editing" aria-label="Ingredient name" type="text" maxlength="80" [(ngModel)]="editIngredientName">
                 }
               </div>
 

@@ -86,24 +86,28 @@ function userFlowSuite(): void {
   beforeEach(configureEntry);
   it('shows the input dialog without advancing for missing or invalid input', opensInputDialog);
   it('adds, edits and removes ingredients', editsIngredients);
+  it('preserves a free-text edit after invalid input and saves the corrected name', editsFreeText);
+  it('does not add again for a held Enter key', ignoresRepeatedEnter);
   it('rejects negative amounts and duplicate names', rejectsBadIngredients);
   it('enforces portion and cook limits', boundsCounters);
   it('paginates recipes at fifteen items', paginatesRecipes);
-  it('rejects fantasy foods and explains unknown ingredients', rejectsFantasyFoods);
+  it('accepts free-text ingredients without selecting a suggestion', acceptsFreeText);
 }
 
 
 
-describe('Ingredient and cookbook flows', userFlowSuite);/** Tests semantic ingredient validation. */
-function rejectsFantasyFoods(): void {
-    for (const name of ['fgsjsjgfj', 'dfahhah', 'Carrot nonsense']) {
-      entry.ingredientName = name; entry.addIngredient();
-      expect(generator.requirements.ingredients.length).toBe(0);
-      expect(entry.errorMessage).toContain('Check the spelling');
-    }
-    entry.ingredientName = 'Karotte'; entry.addIngredient();
-    expect(generator.requirements.ingredients.length).toBe(1);
+describe('Ingredient and cookbook flows', userFlowSuite);
 
+
+
+/** Verifies names outside the optional suggestions remain usable. */
+function acceptsFreeText(): void {
+  for (const name of ['Salatblatt', 'Purple sprouting broccoli', 'Fresh garden sorrel']) {
+    entry.ingredientName = name; entry.addIngredient();
+    expect(entry.errorMessage).toBe('');
+    expect(generator.requirements.ingredients.at(-1)?.ingredient).toBe(name);
+  }
+  expect(generator.requirements.ingredients.length).toBe(3);
 }
 
 
@@ -118,4 +122,29 @@ function opensInputDialog(): void {
   expect(generator.requirements.ingredients.length).toBe(0);
   entry.showInputPopup = false; entry.servingSize = 0.5; entry.addIngredient();
   expect(entry.showInputPopup).toBeFalse(); expect(generator.requirements.ingredients.length).toBe(1);
+}
+
+
+
+/** Keeps name and amount edits intact until both are valid. */
+function editsFreeText(): void {
+  entry.ingredientName = 'Salatblatt'; entry.addIngredient();
+  const item = generator.requirements.ingredients[0]; entry.startEdit(item);
+  entry.editIngredientName = 'Fresh garden sorrel'; entry.editServingSize = -1; entry.saveEdit(item);
+  expect(item.ingredient).toBe('Salatblatt'); expect(item.isEditMode).toBeTrue();
+  expect(entry.editIngredientName).toBe('Fresh garden sorrel'); expect(entry.showInputPopup).toBeTrue();
+  entry.showInputPopup = false; entry.editServingSize = 50; entry.saveEdit(item);
+  expect(item.ingredient).toBe('Fresh garden sorrel'); expect(item.servingSize).toBe('50g');
+  expect(item.isEditMode).toBeFalse();
+}
+
+
+
+/** Prevents keyboard autorepeat from creating duplicate adds or error dialogs. */
+function ignoresRepeatedEnter(): void {
+  entry.ingredientName = 'Salatblatt';
+  const field = document.createElement('div');
+  entry.ingredientKey(new KeyboardEvent('keydown', { key: 'Enter' }), field);
+  entry.ingredientKey(new KeyboardEvent('keydown', { key: 'Enter', repeat: true }), field);
+  expect(generator.requirements.ingredients.length).toBe(1); expect(entry.showInputPopup).toBeFalse();
 }
