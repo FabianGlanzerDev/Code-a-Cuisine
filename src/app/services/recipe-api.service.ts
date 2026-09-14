@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { catchError, forkJoin, map, Observable, of, switchMap, throwError } from 'rxjs';
+import { catchError, forkJoin, map, Observable, of, switchMap, throwError, timeout } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { GeneratedRecipe, Recipe, StoredRecipe } from '../models/recipe.model';
 
@@ -69,12 +69,13 @@ export class RecipeApiService {
    * @param limit Maximum number of returned recipes.
    * @returns {Observable<Recipe[]>} The result of this operation.
    */
-  getMostLiked(limit = 12): Observable<Recipe[]> {
+  getMostLiked(limit = 3): Observable<Recipe[]> {
     return this.http.get<FirebaseRecipeMap>(`${environment.databaseUrl}recipes.json`).pipe(
       map(/** Maps the current item to its output value. @param response Current callback input. */ (response) =>
         this.toRecipeList(response)
-          .sort(/** Compares two items to determine their order. @param a Current callback input. @param b Current callback input. */ (a, b) => (b.likes ?? 0) - (a.likes ?? 0))
-          .slice(0, limit),
+          .filter(/** Includes only positively liked recipes. @param recipe Stored recipe. */ recipe => recipe.likes > 0)
+          .sort(/** Compares two items to determine their order. @param a Current callback input. @param b Current callback input. */ (a, b) => (b.likes ?? 0) - (a.likes ?? 0) || a.id.localeCompare(b.id))
+          .slice(0, Math.min(3, Math.max(0, limit))),
       ),
     );
   }
@@ -88,6 +89,7 @@ export class RecipeApiService {
    */
   getById(id: string): Observable<Recipe | null> {
     return this.http.get<StoredRecipe | null>(`${environment.databaseUrl}recipes/${id}.json`).pipe(
+      timeout(15000),
       map(/** Maps the current item to its output value. @param recipe Current callback input. */ (recipe) => (recipe ? { ...recipe, likes: recipe.likes ?? 0, id } : null)),
     );
   }

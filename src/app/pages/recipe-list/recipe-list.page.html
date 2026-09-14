@@ -1,68 +1,120 @@
 <main class="page-shell recipe-list-page">
   <div class="content content--green">
-    <app-site-header [linked]="true" />
+    <div class="recipe-list-header">
+      <app-site-header [linked]="true" />
 
-    <div class="recipe-list-nav">
-      <a class="back-link" routerLink="/cookbook" aria-label="Back to cookbook">
-        <img src="img/Arrow 11.svg" alt="">
-        <span class="back-link__desktop">Cookbook</span>
-      </a>
-      <a class="button button--primary recipe-list-generate" routerLink="/generate-recipe">Generate a Recipe</a>
+      <div class="recipe-list-nav">
+        <a
+          class="back-link"
+          routerLink="/cookbook"
+          aria-label="Back to cookbook"
+        >
+          <img src="img/Arrow 11.svg" alt="" />
+          <span class="back-link__desktop">Cookbook</span>
+        </a>
+      </div>
     </div>
 
-    @if (cuisine) {
-    <h1 class="sr-only">{{ cuisine.name }} recipes</h1>
-    <img class="cuisine-header" [src]="cuisine.headerImage" [alt]="cuisine.name + ' cuisine'">
-    }
+    <div class="recipe-list-content">
+      <div class="category-intro">
+        <a
+          class="button button--primary recipe-list-generate"
+          routerLink="/generate-recipe"
+          >Generate a recipe</a
+        >
 
-    @if (loading) {
-    <section class="recipe-list-state" aria-live="polite">
-      <p>Loading recipes...</p>
-    </section>
-    } @else if (errorMessage) {
-    <section class="recipe-list-state" role="alert">
-      <p>{{ errorMessage }}</p>
-    </section>
-    } @else if (!store.selectedRecipes.length) {
-    <section class="recipe-list-state" aria-live="polite">
-      <p>No recipes have been generated for this cuisine yet.</p>
-      <a class="button button--primary" routerLink="/generate-recipe">Generate a recipe</a>
-    </section>
-    }
-
-    <section class="recipe-list" aria-label="Recipes">
-      @for (recipe of pageRecipes; track recipe.id; let index = $index) {
-      <a class="recipe-row" [routerLink]="['/recipe-results', recipe.id]"
-        [queryParams]="{ from: 'cookbook', cuisine: cuisine?.name }">
-        <div class="recipe-row__title">
-          <span class="recipe-number">{{ (currentPage - 1) * pageSize + index + 1 }}.</span>
-          <div>
-            <p><img src="img/Frame 750.svg" alt="">Cooking time: {{ recipe.cookingTime }}</p>
-            <h2 class="recipe-row__desktop-title">{{ recipe.title }}</h2>
-          </div>
+        @if (cuisine) {
+        <div class="cuisine-header" [attr.data-cuisine]="cuisine.name">
+          <img [src]="cuisine.headerImage" alt="" />
+          <h1>{{ cuisine.name }} cuisine</h1>
         </div>
+        }
+      </div>
 
-        <h2 class="recipe-row__mobile-title">{{ recipe.title }}</h2>
-
-        <div class="recipe-row__tags">
-          @if (recipe.preferences.dietPreferences.toLowerCase() !== 'no preferences') {
-          <span>{{ recipe.preferences.dietPreferences }}</span>
-          }
-          <span>{{ recipe.preferences.cookingTime }}</span>
-          <span><img src="img/favorite.svg" alt="">{{ recipe.likes }}</span>
-        </div>
-      </a>
+      @if (loading) {
+      <section class="recipe-list-state" aria-live="polite">
+        <p>Loading recipes...</p>
+      </section>
+      } @else if (errorMessage) {
+      <section class="recipe-list-state" role="alert">
+        <p>{{ errorMessage }}</p>
+      </section>
+      } @else if (!store.selectedRecipes.length) {
+      <section class="recipe-list-state" aria-live="polite">
+        <p>No recipes have been generated for this cuisine yet.</p>
+        <a class="button button--primary" routerLink="/generate-recipe"
+          >Generate a recipe</a
+        >
+      </section>
       }
-    </section>
 
-    @if (totalPages > 1) {
-    <nav class="pagination" aria-label="Recipe pages">
-      <button class="button button--white" type="button" [disabled]="currentPage === 1"
-        (click)="previousPage()">Previous</button>
-      <span>Page {{ currentPage }} of {{ totalPages }}</span>
-      <button class="button button--white" type="button" [disabled]="currentPage === totalPages"
-        (click)="nextPage()">Next</button>
-    </nav>
-    }
+      <section class="recipe-list" aria-label="Recipes">
+        @for (recipe of pageRecipes; track recipe.id; let index = $index) {
+        <a
+          class="recipe-row"
+          [routerLink]="['/recipe-results', recipe.id]"
+          [queryParams]="{ from: 'cookbook', cuisine: cuisine?.name, page: currentPage }"
+        >
+          <div class="recipe-row__title">
+            <span class="recipe-number"
+              >{{ (currentPage - 1) * pageSize + index + 1 }}.</span
+            >
+            <div>
+              <p>
+                <img src="img/Frame 750.svg" alt="" />Cooking time: {{
+                recipe.cookingTime }}
+              </p>
+              <h2>{{ recipe.title }}</h2>
+            </div>
+          </div>
+
+          <div class="recipe-row__tags">
+            @if (recipe.preferences; as preferences) { @if
+            (preferences.dietPreferences; as diet) { @if (diet.toLowerCase() !==
+            'no preferences') { <span>{{ diet }}</span> } } @if
+            (preferences.cookingTime; as time) { <span>{{ time }}</span> } }
+            <span
+              class="recipe-likes"
+              [attr.aria-label]="recipe.likes + ' likes'"
+              ><img src="img/favorite.svg" alt="" />{{ recipe.likes }}</span
+            >
+          </div>
+        </a>
+        }
+      </section>
+
+      @if (totalPages > 1) {
+      <nav class="pagination" aria-label="Recipe pages">
+        <button
+          type="button"
+          aria-label="Previous page"
+          [disabled]="currentPage === 1"
+          (click)="previousPage()"
+        >
+          <img src="img/Arrow 11.svg" alt="" />
+        </button>
+        @for (page of pageNumbers; track $index) { @if (page === null) {
+        <span aria-hidden="true">…</span> } @else {
+        <button
+          type="button"
+          [attr.aria-label]="'Page ' + page"
+          [attr.aria-current]="currentPage === page ? 'page' : null"
+          (click)="goToPage(page)"
+        >
+          {{ page }}
+        </button>
+        } }
+        <button
+          type="button"
+          aria-label="Next page"
+          [disabled]="currentPage === totalPages"
+          (click)="nextPage()"
+        >
+          <img class="next-arrow" src="img/Arrow 11.svg" alt="" />
+        </button>
+      </nav>
+      }
+      <a class="button button--primary recipe-list-generate recipe-list-generate--mobile" routerLink="/generate-recipe">Generate a recipe</a>
+    </div>
   </div>
 </main>

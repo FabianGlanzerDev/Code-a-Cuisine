@@ -67,15 +67,15 @@ function boundsCounters(): void {
 
 
 
-/** Verifies pagination boundaries when a cuisine contains more than twenty recipes. */
+/** Verifies pagination boundaries when a cuisine contains more than fifteen recipes. */
 function paginatesRecipes(): void {
   const store = new RecipeStoreService();
   store.selectedRecipes = Array.from({ length: 41 }, /** Creates one entry for the resulting array. @param _ Current callback input. @param index Current callback input. */ (_, index) => ({ ...generatedRecipes()[0], id: String(index), likes: 0 }));
-  const list = new RecipeListPage(store, {} as RecipeApiService, {} as ActivatedRoute);
-  expect(list.pageRecipes.length).toBe(20);
+  const list = new RecipeListPage(store, {} as RecipeApiService, {} as ActivatedRoute, router);
+  expect(list.pageRecipes.length).toBe(15);
   expect(list.totalPages).toBe(3);
-  list.nextPage(); expect(list.pageRecipes[0].id).toBe('20');
-  list.nextPage(); list.nextPage(); expect(list.pageRecipes.length).toBe(1);
+  list.nextPage(); expect(list.pageRecipes[0].id).toBe('15');
+  list.nextPage(); list.nextPage(); expect(list.pageRecipes.length).toBe(11);
   list.previousPage(); expect(list.currentPage).toBe(2);
 }
 
@@ -84,12 +84,38 @@ function paginatesRecipes(): void {
 /** Registers the important form and cookbook pagination flows. */
 function userFlowSuite(): void {
   beforeEach(configureEntry);
+  it('shows the input dialog without advancing for missing or invalid input', opensInputDialog);
   it('adds, edits and removes ingredients', editsIngredients);
   it('rejects negative amounts and duplicate names', rejectsBadIngredients);
   it('enforces portion and cook limits', boundsCounters);
-  it('paginates recipes at twenty items', paginatesRecipes);
+  it('paginates recipes at fifteen items', paginatesRecipes);
+  it('rejects fantasy foods and explains unknown ingredients', rejectsFantasyFoods);
 }
 
 
 
-describe('Ingredient and cookbook flows', userFlowSuite);
+describe('Ingredient and cookbook flows', userFlowSuite);/** Tests semantic ingredient validation. */
+function rejectsFantasyFoods(): void {
+    for (const name of ['fgsjsjgfj', 'dfahhah', 'Carrot nonsense']) {
+      entry.ingredientName = name; entry.addIngredient();
+      expect(generator.requirements.ingredients.length).toBe(0);
+      expect(entry.errorMessage).toContain('Check the spelling');
+    }
+    entry.ingredientName = 'Karotte'; entry.addIngredient();
+    expect(generator.requirements.ingredients.length).toBe(1);
+
+}
+
+
+
+/** Verifies early rejection preserves the entered data and prevents navigation. */
+function opensInputDialog(): void {
+  entry.continueToPreferences(); expect(entry.showInputPopup).toBeTrue();
+  expect(router.navigate).not.toHaveBeenCalled();
+  entry.showInputPopup = false; entry.ingredientName = 'Carrot'; entry.servingSize = 0;
+  entry.addIngredient(); expect(entry.showInputPopup).toBeTrue();
+  expect(entry.ingredientName).toBe('Carrot'); expect(entry.servingSize).toBe(0);
+  expect(generator.requirements.ingredients.length).toBe(0);
+  entry.showInputPopup = false; entry.servingSize = 0.5; entry.addIngredient();
+  expect(entry.showInputPopup).toBeFalse(); expect(generator.requirements.ingredients.length).toBe(1);
+}

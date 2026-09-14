@@ -14,3 +14,7 @@
   width: 142px;
   height: 48px;
 }
+@media (max-width: 767px) {
+  .site-header { padding: 12px 0 32px; }
+  .site-header img { width: 96px; height: 32px; }
+}

@@ -32,6 +32,11 @@ input:focus-visible {
   margin: 0 auto;
 }
 
+/* Keep the 1440px desktop frame, including its two 64px gutters, on wider screens. */
+@media (min-width: 1440px) {
+  .content { max-width: 1312px; }
+}
+
 .content--green {
   color: var(--green-primary);
 }
@@ -114,3 +119,6 @@ input {
   white-space: nowrap;
   border: 0;
 }
+
+/* Give every return link the same line box, independent of its label. */
+.back-link { min-height: 24px; vertical-align: top; }

@@ -10,9 +10,12 @@ import { readBrowserValue, writeBrowserValue } from '../../services/browser-stor
   selector: 'app-recipe-detail-page',
   imports: [RouterLink, SiteHeaderComponent],
   templateUrl: './recipe-detail.page.html',
-  styleUrl: './recipe-detail.page.css',
+  styleUrls: ['./recipe-detail.page.css', './recipe-detail-mobile.css'],
 })
 export class RecipeDetailPage implements OnInit {
+  ingredientsExpanded = true;
+  directionsExpanded = true;
+
   recipe: Recipe | null = null;
   loading = true;
   errorMessage = '';
@@ -21,7 +24,21 @@ export class RecipeDetailPage implements OnInit {
   likeError = '';
   backRoute = '/recipe-results';
   backLabel = 'Recipe Results';
-  backQuery: { cuisine?: string } = {};
+  backQuery: { cuisine?: string; page?: number } = {};
+
+  /** Allows older stored recipes to omit nutrition without inventing zero values. */
+  get nutrition(): Partial<Recipe['nutritionalInformation']> | undefined {
+    return this.recipe?.nutritionalInformation;
+  }
+
+
+
+  /** Displays absent values explicitly while retaining genuine zero values. @param value Stored nutrition value. */
+  nutritionValue(value: unknown): string {
+    return value === undefined || value === null || value === '' ? 'Not available' : String(value);
+  }
+
+
 
   /**
    * Initializes the component or service with its required dependencies.
@@ -46,11 +63,13 @@ export class RecipeDetailPage implements OnInit {
     if (!id) return this.showRecipeError('The requested recipe could not be found.');
 
     const cached = this.store.findRecipe(id);
-    if (cached) return this.setRecipe(cached);
+    if (cached) this.setRecipe(cached);
 
     this.api.getById(id).subscribe({
       next: /** Applies a successful asynchronous result. @param recipe Current callback input. */ (recipe) => recipe ? this.setRecipe(recipe) : this.showRecipeError('This recipe no longer exists.'),
-      error: /** Handles a failed asynchronous operation. */ () => this.showRecipeError('The recipe could not be loaded. Please try again.'),
+      error: /** Keeps locally recovered results available during a network outage. */ () => {
+        if (!cached) this.showRecipeError('The recipe could not be loaded. Please try again.');
+      },
     });
   }
 
@@ -64,7 +83,8 @@ export class RecipeDetailPage implements OnInit {
     const cuisine = this.route.snapshot.queryParamMap.get('cuisine');
     this.backRoute = cuisine ? '/recipes-list' : '/cookbook';
     this.backLabel = 'Cookbook';
-    this.backQuery = cuisine ? { cuisine } : {};
+    const page = Number(this.route.snapshot.queryParamMap.get('page'));
+    this.backQuery = cuisine ? { cuisine, ...(Number.isSafeInteger(page) && page > 0 ? { page } : {}) } : {};
   }
 
 
@@ -178,5 +198,12 @@ export class RecipeDetailPage implements OnInit {
     const stored = readBrowserValue<unknown>('code-a-cuisine-liked-recipes', []);
     const ids = Array.isArray(stored) ? stored.filter(/** Checks whether the current item matches the filter. @param id Current callback input. */ (id): id is string => typeof id === 'string') : [];
     return new Set(ids);
+  }
+
+
+
+  /** Capitalizes only the first letter for display; backend comparison names remain unchanged. @param name Ingredient name. */
+  ingredientLabel(name: string): string {
+    return name ? name.charAt(0).toLocaleUpperCase() + name.slice(1) : name;
   }
 }

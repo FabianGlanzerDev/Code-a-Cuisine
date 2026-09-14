@@ -17,7 +17,6 @@
   grid-template-columns: minmax(0, 454px) minmax(0, 1fr);
   align-items: center;
   column-gap: 17px;
-  overflow: hidden;
 }
 
 .cookbook-intro {
@@ -42,7 +41,6 @@
 
 .liked-recipes {
   min-width: 0;
-  overflow: hidden;
 }
 
 .liked-recipes h2 {
@@ -89,13 +87,14 @@
 
 .liked-card {
   display: flex;
-  width: 370px;
-  min-width: 370px;
+  width: min(370px, 100%);
+  min-width: 0;
   min-height: 124px;
   padding: 16px 12px;
   border-radius: 16px;
   background: rgb(219 224 219 / 70%);
-  flex: 0 0 370px;
+  flex: 0 0 min(370px, 100%);
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 24px;
@@ -121,7 +120,7 @@
   font-size: 1rem;
   font-weight: 500;
   line-height: 1.25;
-  white-space: nowrap;
+  flex-wrap: wrap;
   padding-bottom: 4px;
 }
 
@@ -136,7 +135,7 @@
   overflow: hidden;
   font-size: 1.5rem;
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.25;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   color: #1E5515;
@@ -154,10 +153,10 @@
   justify-content: center;
   gap: 4px;
   color: #10310b;
-  font-family: Mulish, sans-serif;
+  font-family: var(--font-body);
   font-size: 1rem;
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.25;
 }
 
 .like-chip img {
@@ -225,17 +224,16 @@
 
 @media (max-width: 767px) {
   .cookbook-intro h1 {
-    font-size: 3rem;
+    font-size: 40px;
   }
 
   .cookbook-intro p {
-    font-size: 1.25rem;
+    font-size: 18px;
   }
 
   .liked-card {
-    width: 320px;
-    min-width: 320px;
-    flex-basis: 320px;
+    width: min(320px, 100%);
+    flex-basis: min(320px, 100%);
   }
 
   .cuisine-grid {
@@ -257,9 +255,8 @@
   }
 
   .liked-card {
-    width: 280px;
-    min-width: 280px;
-    flex-basis: 280px;
+    width: min(280px, 100%);
+    flex-basis: min(280px, 100%);
   }
 
   .liked-card h3 {
@@ -280,3 +277,5 @@
     margin: 0 auto;
   }
 }
+
+@media (max-width: 767px) { .cookbook-new { margin-inline: auto; } }

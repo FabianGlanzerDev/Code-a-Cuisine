@@ -4,6 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { Type } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
+import { of } from 'rxjs';
 import { WelcomePage } from '../app/pages/welcome/welcome.page';
 import { IngredientEntryPage } from '../app/pages/ingredient-entry/ingredient-entry.page';
 import { PreferencesPage } from '../app/pages/preferences/preferences.page';
@@ -11,14 +12,16 @@ import { RecipeDetailPage } from '../app/pages/recipe-detail/recipe-detail.page'
 import { RecipeListPage } from '../app/pages/recipe-list/recipe-list.page';
 import { RecipeResultsPage } from '../app/pages/recipe-results/recipe-results.page';
 import { CookbookPage } from '../app/pages/cookbook/cookbook.page';
+import { PrivacyPage } from '../app/pages/privacy/privacy.page';
 import { ImprintPage } from '../app/pages/imprint/imprint.page';
+import { LoadingOverlayComponent } from '../app/pages/loading-overlay/loading-overlay.component';
 import { RecipeStoreService } from '../app/services/recipe-store.service';
 import { generatedRecipes } from './recipe.fixture';
 
 let frame: HTMLIFrameElement;
 let fixture: ComponentFixture<unknown>;
 const pages: Type<unknown>[] = [WelcomePage, IngredientEntryPage, PreferencesPage, RecipeDetailPage,
-  RecipeListPage, RecipeResultsPage, CookbookPage, ImprintPage];
+  RecipeListPage, RecipeResultsPage, CookbookPage, ImprintPage, PrivacyPage];
 
 /**
  * Creates a real nested viewport so CSS media queries use the tested width.
@@ -44,6 +47,7 @@ function configureLayout(target: Document): void {
   TestBed.configureTestingModule({ providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(),
     { provide: DOCUMENT, useValue: target }, { provide: ActivatedRoute, useValue: {
       snapshot: { paramMap: new Map([['id', 'layout-0']]), queryParamMap: new Map([['cuisine', 'german']]) },
+      queryParamMap: of(new Map([['cuisine', 'german']])),
     } }] });
   const store = TestBed.inject(RecipeStoreService);
   const recipes = generatedRecipes().map(/** Maps the current item to its output value. @param recipe Current callback input. @param index Current callback input. */ (recipe, index) => ({ ...recipe, id: 'layout-' + index, likes: 123,
@@ -64,7 +68,7 @@ function flushLayoutRequests(): void {
   const recipes = TestBed.inject(RecipeStoreService).generatedRecipes;
   http.match(/** Handles the current value in the enclosing operation. */ () => true).forEach(/** Processes the current item in the enclosing operation. @param request Current callback input. */ (request) => request.flush(request.request.url.includes('quota')
     ? { ipLimit: 3, ipUsed: 0, ipRemaining: 3, systemLimit: 12, systemUsed: 0, systemRemaining: 12 }
-    : Object.fromEntries(recipes.map(/** Maps the current item to its output value. @param recipe Current callback input. */ (recipe) => [recipe.id, recipe]))));
+    : request.request.url.endsWith('/layout-0.json') ? recipes[0] : Object.fromEntries(recipes.map(/** Maps the current item to its output value. @param recipe Current callback input. */ (recipe) => [recipe.id, recipe]))));
   http.verify();
 }
 
@@ -86,6 +90,7 @@ async function checkLayout(page: Type<unknown>, width: number): Promise<void> {
   expect(frame.contentWindow!.getComputedStyle(target.body).fontFamily).toContain('Quicksand');
   await decodeImages(target);
   await target.fonts.ready;
+  expect(target.fonts.check('500 16px Quicksand')).withContext('Quicksand must load without fallback').toBeTrue();
   expect(target.documentElement.scrollWidth).withContext(`${page.name} at ${width}px`).toBeLessThanOrEqual(width + 1);
 }
 
@@ -97,6 +102,7 @@ async function checkLayout(page: Type<unknown>, width: number): Promise<void> {
  * @returns {Promise<void>} The result of this operation.
  */
 async function decodeImages(target: Document): Promise<void> {
+  await new Promise<void>(/** Allows picture sources to update after iframe adoption. */ resolve => target.defaultView!.requestAnimationFrame(/** Continues after responsive image selection. */ () => resolve()));
   await Promise.all(Array.from(target.images).map(/** Maps the current item to its output value. @param image Current callback input. */ (image) => image.decode().catch(/** Handles a rejected asynchronous operation. */ () => {
     throw new Error('Cannot decode fixture image: ' + image.src);
   })));
@@ -131,6 +137,57 @@ async function checkQuantityDialog(): Promise<void> {
 
 
 
+/** Checks that a complete card fits inside the carousel. */
+async function checkCookbookCard(): Promise<void> {
+  await checkLayout(CookbookPage, 320);
+  const target = frame.contentDocument!;
+  const card = target.querySelector<HTMLElement>('.liked-card')!;
+  const scroller = target.querySelector<HTMLElement>('.liked-recipes__scroller')!;
+  expect(card.offsetWidth).toBeLessThanOrEqual(scroller.clientWidth);
+  expect(card.scrollWidth).toBeLessThanOrEqual(card.clientWidth);
+}
+
+
+
+/** Checks vertical separation of loading content and branding. */
+async function checkShortLoading(): Promise<void> {
+  const target = createViewport(320);
+  frame.style.height = '400px';
+  configureLayout(target);
+  fixture = TestBed.createComponent(LoadingOverlayComponent);
+  fixture.detectChanges();
+  await decodeImages(target);
+  const header = target.querySelector('app-site-header')!.getBoundingClientRect();
+  const content = target.querySelector('.loading-content')!.getBoundingClientRect();
+  expect(content.top).toBeGreaterThanOrEqual(header.bottom);
+}
+
+
+
+/** Verifies real decoding of all local font weights. */
+async function checkFonts(): Promise<void> {
+  const target = createViewport(1440);
+  for (const family of ['Ubuntu', 'Quicksand', 'Mulish']) for (const weight of [300, 400, 500, 700]) {
+    const faces = await target.fonts.load(`${weight} 16px ${family}`);
+    expect(faces.length).toBeGreaterThan(0);
+    expect(faces.every(/** Checks browser decoding. @param face Loaded font. */ face => face.status === 'loaded')).toBeTrue();
+  }
+}
+
+
+
+/** Preserves missing nutrition as unavailable, while retaining real zero values. */
+async function checkMissingNutrition(): Promise<void> {
+  await checkLayout(RecipeDetailPage, 1440);
+  const detail = fixture.componentInstance as RecipeDetailPage;
+  Reflect.deleteProperty(detail.recipe!, 'nutritionalInformation');
+  fixture.detectChanges();
+  expect(frame.contentDocument!.querySelector('.nutrition')!.textContent).toContain('Not available');
+  expect(detail.nutritionValue(0)).toBe('0');
+}
+
+
+
 /**
  * Registers all pages at small-phone, phone, tablet, laptop and desktop widths.
  */
@@ -140,8 +197,12 @@ function layoutSuite(): void {
     spyOn(Storage.prototype, 'setItem').and.stub();
   });
   afterEach(cleanupLayout);
+  it('does not invent zero nutrition for older recipes', checkMissingNutrition);
   it('keeps keyboard focus in the quantity modal and closes with Escape', checkQuantityDialog);
-  for (const page of pages) for (const width of [320, 480, 768, 1024, 1440]) {
+  it('keeps a complete cookbook card inside the narrow carousel', checkCookbookCard);
+  it('keeps generating content below the logo in a short window', checkShortLoading);
+  it('loads every declared font face as valid binary data', checkFonts);
+  for (const page of pages) for (const width of [320, 375, 480, 768, 900, 1024, 1200, 1440, 1920, 4000]) {
     it(`${page.name} fits ${width}px`, /** Verifies the behavior named by this test. */ () => checkLayout(page, width));
   }
 }

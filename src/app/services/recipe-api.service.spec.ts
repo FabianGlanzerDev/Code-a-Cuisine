@@ -86,9 +86,32 @@ function apiSuite(): void {
   it('confirms all stored contents using only reads and preserves likes', confirmsSavedBatch);
   it('rejects missing or partially stored recipe contents', rejectsPartialStorage);
   it('uses ETags to preserve concurrent likes', retriesLikeConflict);
+  it('shows at most three positive likes with deterministic ties', limitsMostLiked);
+  it('does not fill empty most-liked results with zero likes', excludesZeroLikes);
   it('handles an unlike when the shared count is already zero', handlesZeroLikes);
 }
 
 
 
 describe('RecipeApiService', apiSuite);
+
+
+
+/** Checks the bounded ranking while retaining stable IDs for equal counts. */
+function limitsMostLiked(): void {
+  const recipe = generatedRecipes()[0];
+  api.getMostLiked(12).subscribe(/** Checks order and top-three bound. @param recipes Returned recipes. */ recipes => expect(recipes.map(/** Reads recipe identity. @param item Recipe. */ item => item.id)).toEqual(['d', 'a', 'b']));
+  http.expectOne(/** Matches the read-only list. @param req HTTP request. */ req => req.method === 'GET')
+    .flush({ c: { ...recipe, likes: 2 }, b: { ...recipe, likes: 2 }, a: { ...recipe, likes: 2 }, d: { ...recipe, likes: 4 }, e: { ...recipe, likes: 0 } });
+}
+
+
+
+/** Checks fewer than three positive recipes and the fully empty state. */
+function excludesZeroLikes(): void {
+  for (const likes of [0, 1]) {
+    api.getMostLiked().subscribe(/** Checks no filler entries. @param recipes Returned recipes. */ recipes => expect(recipes.length).toBe(likes));
+    http.expectOne(/** Matches the read-only list. @param req HTTP request. */ req => req.method === 'GET')
+      .flush({ a: { ...generatedRecipes()[0], likes }, b: { ...generatedRecipes()[0], likes: 0 } });
+  }
+}

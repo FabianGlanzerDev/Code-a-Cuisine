@@ -20,7 +20,11 @@ function projectAssets(serveFile) {
  * @param next Next middleware when the URL is not a project asset.
  */
 function serveProjectAsset(serveFile, request, response, next) {
-  const pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+  let pathname = decodeURIComponent(new URL(request.url, 'http://localhost').pathname);
+  if (/^\/base\/media\/(Ubuntu-[\w-]+|(?:Quicksand|Mulish)-VariableFont_wght)\.ttf$/.test(pathname)) {
+    const font = path.basename(pathname);
+    pathname = '/fonts/' + (font.split('-')[0] + '/') + font;
+  }
   if (!/^\/(img|fonts|animations)\//.test(pathname)) return next();
   const filename = path.resolve(publicRoot, '.' + pathname);
   if (!filename.startsWith(publicRoot + path.sep) || !fs.existsSync(filename)) return next();

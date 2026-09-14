@@ -51,40 +51,40 @@
             <span>{{ recipe.preferences.dietPreferences }}</span>
             }
             <span>{{ recipe.preferences.cookingTime }}</span>
-            <span><img src="img/favorite.svg" alt="">{{ recipe.likes }}</span>
+            <span><img [src]="likedByThisBrowser ? 'img/favorite-filled.svg' : 'img/favorite.svg'" alt="">{{ recipe.likes }}</span>
           </div>
 
           <section class="nutrition" aria-labelledby="nutrition-title">
             <h2 id="nutrition-title">Nutritional information</h2>
-            @if (recipe.nutritionalInformation.perPortion; as portion) {
+            @if (nutrition?.perPortion; as portion) {
             <div class="nutrition-group">
               <h3>Per portion</h3>
               <div class="nutrition-table">
-                <p><strong>Energy</strong><span>{{ portion.calories }}</span></p>
-                <p><strong>Protein</strong><span>{{ portion.proteins }} <small>{{ portion.proteinsPercent
+                <p><strong>Energy</strong><span>{{ nutritionValue(portion.calories) }}</span></p>
+                <p><strong>Protein</strong><span>{{ nutritionValue(portion.proteins) }} <small>{{ portion.proteinsPercent
                       }}</small></span></p>
-                <p><strong>Fat</strong><span>{{ portion.fats }} <small>{{ portion.fatsPercent }}</small></span></p>
-                <p><strong>Carbs</strong><span>{{ portion.carbs }} <small>{{ portion.carbsPercent }}</small></span></p>
+                <p><strong>Fat</strong><span>{{ nutritionValue(portion.fats) }} <small>{{ portion.fatsPercent }}</small></span></p>
+                <p><strong>Carbs</strong><span>{{ nutritionValue(portion.carbs) }} <small>{{ portion.carbsPercent }}</small></span></p>
               </div>
             </div>
-            @if (recipe.nutritionalInformation.total; as total) {
+            @if (nutrition?.total; as total) {
             <div class="nutrition-group nutrition-group--total">
               <h3>Total recipe</h3>
               <div class="nutrition-table">
-                <p><strong>Energy</strong><span>{{ total.calories }}</span></p>
-                <p><strong>Protein</strong><span>{{ total.proteins }} <small>{{ total.proteinsPercent }}</small></span>
+                <p><strong>Energy</strong><span>{{ nutritionValue(total.calories) }}</span></p>
+                <p><strong>Protein</strong><span>{{ nutritionValue(total.proteins) }} <small>{{ total.proteinsPercent }}</small></span>
                 </p>
-                <p><strong>Fat</strong><span>{{ total.fats }} <small>{{ total.fatsPercent }}</small></span></p>
-                <p><strong>Carbs</strong><span>{{ total.carbs }} <small>{{ total.carbsPercent }}</small></span></p>
+                <p><strong>Fat</strong><span>{{ nutritionValue(total.fats) }} <small>{{ total.fatsPercent }}</small></span></p>
+                <p><strong>Carbs</strong><span>{{ nutritionValue(total.carbs) }} <small>{{ total.carbsPercent }}</small></span></p>
               </div>
             </div>
             }
             } @else {
             <div class="nutrition-table">
-              <p><strong>Energy</strong><span>{{ recipe.nutritionalInformation.calories }}</span></p>
-              <p><strong>Protein</strong><span>{{ recipe.nutritionalInformation.proteins }}</span></p>
-              <p><strong>Fat</strong><span>{{ recipe.nutritionalInformation.fats }}</span></p>
-              <p><strong>Carbs</strong><span>{{ recipe.nutritionalInformation.carbs }}</span></p>
+              <p><strong>Energy</strong><span>{{ nutritionValue(nutrition?.calories) }}</span></p>
+              <p><strong>Protein</strong><span>{{ nutritionValue(nutrition?.proteins) }}</span></p>
+              <p><strong>Fat</strong><span>{{ nutritionValue(nutrition?.fats) }}</span></p>
+              <p><strong>Carbs</strong><span>{{ nutritionValue(nutrition?.carbs) }}</span></p>
             </div>
             }
           </section>
@@ -93,16 +93,16 @@
 
       <section class="ingredient-section">
         <div class="section-visual">
-          <img src="img/Hero Directions.png" alt="Ingredient illustration">
+          <img src="img/Hero Directions.png" alt="">
           <h2>Ingredients</h2>
         </div>
 
-        <div class="ingredient-columns">
+        <div class="ingredient-columns" id="recipe-ingredients" [hidden]="!ingredientsExpanded">
           <section>
             <h3>Your ingredients</h3>
             <ul>
               @for (ingredient of recipe.ingredients.yourIngredients; track ingredient.ingredient) {
-              <li><span>{{ ingredient.servingSize }}</span>{{ ingredient.ingredient }}</li>
+              <li><span>{{ ingredient.servingSize }}</span>{{ ingredientLabel(ingredient.ingredient) }}</li>
               }
             </ul>
           </section>
@@ -116,12 +116,15 @@
             </ul>
           </section>
         </div>
+        <button class="section-toggle" type="button" [attr.aria-expanded]="ingredientsExpanded" aria-controls="recipe-ingredients" (click)="ingredientsExpanded = !ingredientsExpanded">{{ ingredientsExpanded ? 'Hide ingredients ▴' : 'Show ingredients ▾' }}</button>
       </section>
 
       <section class="directions-section">
-        <h2 class="sr-only">Directions</h2>
-        <img class="directions-visual" src="img/Hero for silgle recipe view.png" alt="Cooking directions illustration">
-        <div class="directions-grid">
+        <div class="section-visual">
+          <img src="img/Hero for silgle recipe view.png" alt="">
+          <h2>Directions</h2>
+        </div>
+        <div class="directions-grid" id="recipe-directions" [hidden]="!directionsExpanded">
           @for (direction of recipe.directions; track direction.order; let index = $index) {
           <article class="direction-card">
             <header>
@@ -144,6 +147,7 @@
           </article>
           }
         </div>
+        <button class="section-toggle" type="button" [attr.aria-expanded]="directionsExpanded" aria-controls="recipe-directions" (click)="directionsExpanded = !directionsExpanded">{{ directionsExpanded ? 'Hide directions ▴' : 'Show directions ▾' }}</button>
       </section>
 
       @if (recipe.cooksAmount > 1) {
@@ -165,10 +169,10 @@
       }
 
       <div class="finished-prompt">
-        <p><strong>Just finished this meal?</strong> Give it a heart, so that the others know this is delicious</p>
+        <p><strong>Just finished this meal?</strong> Give it a heart, so that the others know this is delicious.</p>
         <button class="heart-action" type="button" [class.heart-action--liked]="likedByThisBrowser"
           [disabled]="likePending" [attr.aria-pressed]="likedByThisBrowser" (click)="toggleLike()"
-          aria-label="Give this recipe a heart">
+          [attr.aria-label]="likedByThisBrowser ? 'Remove your heart from this recipe' : 'Give this recipe a heart'">
           <img [src]="likedByThisBrowser ? 'img/favorite-filled.svg' : 'img/favorite.svg'" alt="">
         </button>
       </div>
