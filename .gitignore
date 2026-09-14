@@ -53,3 +53,11 @@ Thumbs.db
 # Local OS/editor metadata
 Desktop.ini
 *.swp
+
+# Generated browser review artifacts
+/playwright-report/
+/test-results/
+/artifacts/
+/review-*.zip
+/mentor-*.png
+/audit-*.json

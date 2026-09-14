@@ -78,4 +78,3 @@ function safeLogger() {
 
 test('supplied owner exports retain every configuration value outside documented changes', ownerConfiguration);
 test('owner logger does not forward raw exception messages or request details', safeLogger);
-

@@ -1,23 +1,22 @@
-# Code à Cuisine
+﻿# Code à Cuisine
 
-Angular application that turns available ingredients and cooking preferences into three recipe suggestions through n8n and Gemini. Recipes are shared through a Firebase Realtime Database cookbook.
+Angular-Anwendung für drei Rezeptvorschläge aus vorhandenen Zutaten, mit n8n-Generierung und Firebase-Cookbook.
 
-## Run locally
+## Lokal starten
 
-Use Node.js compatible with Angular 20: `^20.19.0`, `^22.12.0` or `>=24.0.0`, and npm. This review used Node 24.20.0.
+Node.js passend zu Angular 20 verwenden (20.19+, 22.12+ oder 24+) und Abhängigkeiten installieren:
 
-```bash
+```sh
 npm ci
 npm start
 ```
 
-In Windows PowerShell, use `npm.cmd` if execution policy blocks `npm.ps1`.
+Unter Windows bei gesperrtem PowerShell-Skript `npm.cmd` verwenden. Lokal: `http://localhost:4200/#/`.
+Die Umgebungsdateien verweisen auf entfernte Backends. Eine echte Generierung kann Kosten verursachen; automatisierte Tests verwenden simulierte Antworten oder lokale Original-Fixtures.
 
-Both environment files currently point to remote n8n and Firebase endpoints. Clicking Generate may invoke a paid model. Automated tests intercept HTTP or use local fixtures and do not generate paid recipes.
+## Build und Tests
 
-## Build and verification
-
-```bash
+```sh
 npm run build
 npm test -- --watch=false --browsers=ChromeHeadless
 npm run test:backend
@@ -25,26 +24,34 @@ npm run n8n:check
 npm run check:style
 ```
 
-Chrome is required for Angular tests. `n8n:build` regenerates the two webhook templates from the validation libraries and prompt. `n8n:check` detects drift between source and checked-in templates.
+Angular-Tests benötigen Chrome. Firebase-Emulatortests sind in [firebase/README.md](firebase/README.md) beschrieben.
 
-The production files are generated in `dist/code-a-cuisine/browser`. Publish that directory with SPA fallback to `index.html` for Angular routes. Firebase rules and the separate local emulator test command are documented in [firebase/README.md](firebase/README.md).
+## Verhalten
 
-## Features and limits
+- Zutaten und Präferenzen werden lokal gespeichert und nach Neuladen wiederhergestellt. Defaults: Quick, German, No preferences; zwei Portionen, ein Koch.
+- Generierung benötigt gültige Zutaten und jeweils drei bestätigte freie Plätze für IP und System. Unbekannte oder fehlgeschlagene Quotenabfragen sperren den Button mit Erklärung und erneuter Abfragemöglichkeit.
+- Grenzen: 1–12 Portionen, 1–3 Köche, drei Rezepte pro IP und zwölf systemweit pro UTC-Tag. Reservierungen bleiben auch bei Modellfehlern verbraucht; keine automatische Modellwiederholung.
+- Das Eingabe-Popup erklärt belegte Eingabefehler. Eine fachliche Mindestmenge je Portion ist nicht definiert und wird nicht erfunden. Technische Fehler und Quotenlimits öffnen es nicht.
+- Drei Rezepte sind Alternativen. Makro-Prozentwerte werden aus validierten Grammwerten berechnet; das bestätigt keine sachliche Genauigkeit der Modellschätzung.
 
-- Positive ingredient quantities in grams, millilitres or pieces; autocomplete, edit and delete.
-- 1–12 portions (default 2), 1–3 cooks, three time categories, six cuisines and four diet choices.
-- Three suggestions per request. **3 recipes per IP per UTC day; 12 recipes system-wide per UTC day.** One IP can request one batch per day.
-- Atomic quota and throttle reservation before the model request, using Firebase ETags. Unconfirmed reservations never start a model request. Reserved slots remain used after model errors to bound costs; no automatic model retry.
-- Server checks for positive quantities, canonical IPs, ingredient coverage, diet exclusions, scaled quantities, nutrition and scheduled cooking steps.
-- Atomic Firebase saving in n8n with stable keys and up to three storage-only attempts. Pending recipes remain locally available across reloads when browser storage permits. Read-only recovery confirms all three records after backend restoration; no public recipe writes are required.
-- Public cookbook, cuisine categories, recipe details, likes and pagination at 20 recipes.
+## Veröffentlichung
 
-## Backend setup
+Frontend: **Inhalt von `dist/code-a-cuisine/browser/` nach `/code-a-cuisine/`** hochladen, nicht den umgebenden Ordner. Vorher Serverstand sichern. Neue Bundles und benötigte Assets zuerst, `index.html` zuletzt übertragen. Die aktuelle `index.html` bestimmt die Bundle-Namen. Vorhandene fremde Serverregeln nicht löschen.
 
-See [n8n setup](n8n/README.md). The templates contain no credentials. The owner has confirmed connected Firebase OAuth, a successful private quota read and the working `models/gemini-3.6-flash` model, now included in the templates. Trusted ingress, protected recipe writes and the Error Logger integration still need live completion. The repository does not prove that its latest templates are deployed remotely.
+Angular verwendet Hash-Routing mit erhaltenem Basispfad. Kein SPA-Fallback erforderlich. Alte Links ohne `#` werden dadurch nicht repariert.
 
-## Repository and submission
+- Start: https://fabian-glanzer.developerakademie.net/code-a-cuisine/#/
+- Eingabe: https://fabian-glanzer.developerakademie.net/code-a-cuisine/#/generate-recipe
+- Kategorie: https://fabian-glanzer.developerakademie.net/code-a-cuisine/#/recipes-list?cuisine=german&page=3
 
-No Git remote is configured in this checkout; a verified GitHub URL could not be determined. Add the actual repository and deployed frontend links before submission. The existing 41 commits have been preserved. The backend webhook URL is not the frontend submission link.
+Nach Upload `node scripts/check-deployment.cjs` für Einstiegdokument und Assets ausführen. Zusätzlich Hash-Unterseiten im Browser direkt öffnen und mit F5 neu laden, Details sowie Kategorie/Pagination/Zurück/Vorwärts prüfen. HTTP überträgt das Fragment nicht und kann diese Routerprüfung nicht ersetzen.
 
-The complete checklist review, acceptance blockers and changed-file inventory are in [ABNAHME.md](ABNAHME.md). Exclude `node_modules`, `dist` and ignored `tmp` review artifacts from a submission ZIP.
+Die drei konfigurierten n8n-Importdateien und Übernahmeschritte stehen in [n8n/README.md](n8n/README.md). Ein FTP-Upload veröffentlicht keine Workflows; ein Workflowimport veröffentlicht kein Frontend.
+
+## Stand der lokalen Mentorprüfung
+
+144 Angular-Tests, 59 Backendtests einschließlich Originalfällen #114/#136, Workflow-Konsistenz und Stilprüfung bestanden. Produktionsbuild erfolgreich mit sechs CSS-Budgetwarnungen. Browserprüfung: 135 Seiten-/Viewportfälle ohne Dokumentüberlauf; zusätzliche Button-, Navigations- und Home-Prüfungen bei 320/375/390/768/1440 px, 1024×600, 2560×1440, 3440×1440 und 3840×2160. Direkte Hash-Routen und F5 auf statischem Server ohne SPA-Fallback geprüft. Backendantworten wurden simuliert, vorhandene Originalrezepte als Fixtures verwendet; keine kostenpflichtige Generierung oder Produktionsschreibzugriffe.
+
+Belegte Figma-Schriftwerte und fehlende Angaben: [docs/mobile-figma-values.md](docs/mobile-figma-values.md). Logo-Position erhalten; mobile Listen abwechselnd hinterlegt, Cookbook-Button zentriert und Zurückpfeile ausgerichtet. Zusätzliche Teller nur ab 2560 px und mindestens 2:1.
+
+Offen bleiben der veröffentlichte Stand nach Betreiber-Upload, ein bestätigter aktueller Live-Durchlauf einschließlich Speicherung, nicht belegte Figma-Schriftwerte und die fachliche Portionsregel. Lokale Tests sind keine pauschale Abgabefreigabe. Build, temporäre Prüfberichte und Screenshots sind nicht versioniert; Lizenzen und Regressionstests bleiben erhalten.
