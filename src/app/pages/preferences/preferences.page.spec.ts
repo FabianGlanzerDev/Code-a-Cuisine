@@ -305,7 +305,7 @@ function malformedFailureQuota(): void {
   expect(page.errorMessage).toContain('technical error');
   http.expectOne(/** Reconciles once. @param request HTTP request. */ request => request.method === 'GET')
     .flush({ ipLimit: 3, ipUsed: 3, ipRemaining: 0, systemLimit: 12, systemUsed: 3, systemRemaining: 9 });
-  expect(page.generationBlockedReason).toContain('daily recipe limit');
+  expect(page.generationBlockedReason).toContain('daily limit');
 }
 
 

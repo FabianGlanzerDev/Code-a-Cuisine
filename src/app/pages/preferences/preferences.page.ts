@@ -132,14 +132,22 @@ export class PreferencesPage implements OnInit {
   /** Explains exactly the same conditions used by the Generate button. */
   get generationBlockedReason(): string {
     if (this.loading) return 'A request is already in progress.';
-    if (this.quotaChecking) return 'Checking available recipe slots…';
-    if (this.quotaError || !this.quota.status) return 'Availability is unknown. Please check recipe slots again.';
+    if (this.quotaBlockedReason) return this.quotaBlockedReason;
     if (this.store.pendingRecipes.length) return 'Confirm saving the previous recipes before generating again.';
     if (!this.generator.requirements.ingredients.length) return 'Add ingredients before generating a recipe.';
     if (this.generator.requirements.ingredients.some(/** Rejects invalid quantities or unfinished edits. @param entry Ingredient. */ entry => !validEntry(entry) || entry.isEditMode)) return 'Finish editing your ingredients and enter valid positive quantities.';
     if (!this.generator.canGenerate()) return 'Choose a cooking time, cuisine and diet, with 1-12 portions and 1-3 cooks.';
-    if (this.quota.status.ipRemaining < 3) return 'Your daily recipe limit is reached. Three free IP slots are required.';
-    if (this.quota.status.systemRemaining < 3) return 'The daily system limit is reached. Three free system slots are required.';
+    return '';
+  }
+
+
+
+  /** Shares one quota decision with the display and generation guard. */
+  get quotaBlockedReason(): string {
+    if (this.quotaChecking) return 'Checking available recipe slots...';
+    if (this.quotaError || !this.quota.status) return 'Availability is unknown. Please check recipe slots again.';
+    if (this.quota.status.ipRemaining < 3) return 'Your daily limit is reached. Resets at midnight UTC.';
+    if (this.quota.status.systemRemaining < 3) return 'System capacity is insufficient for one generation. Resets at midnight UTC.';
     return '';
   }
 

@@ -15,18 +15,23 @@
       <h1>Choose your preferences</h1>
 
       <div class="quota-status" role="status" aria-live="polite">
-        @if (quotaError) { <p>{{ quotaError }}</p> }
-        @else if (quota.status; as status) {
-          <p>Free recipe slots - Your IP: {{ status.ipRemaining }}/{{ status.ipLimit }} recipe slots. System: {{ status.systemRemaining }}/{{ status.systemLimit }}.</p>
-          @if (status.ipRemaining < 3) { <p>Your daily limit is reached. Reset: midnight UTC.</p> }
-          @else if (status.systemRemaining < 3) { <p>System limit reached. Reset: midnight UTC.</p> }
-          @else { <p>Daily reset: midnight UTC.</p> }
-        } @else { <p>Checking available recipe slots…</p> }
+        <div class="quota-summary">
+          @if (!quotaChecking && !quotaError && quota.status; as status) {
+            <p>Your daily allowance: {{ status.ipUsed }} of {{ status.ipLimit }} recipe slots used.</p>
+            <p>System availability: {{ status.systemRemaining }} recipe slots remaining.</p>
+          } @else {
+            <p>Your daily allowance: &mdash;</p>
+            <p>System availability: &mdash;</p>
+          }
+        </div>
         <button class="button button--primary quota-refresh" type="button" [disabled]="quotaChecking"
           [attr.aria-busy]="quotaChecking" (click)="refreshQuota()">
-          {{ quotaChecking ? 'Checking recipe slots?' : 'Check recipe slots again' }}
+          {{ quotaChecking ? 'Checking recipe slots...' : 'Check recipe slots again' }}
         </button>
-        <p>One generation uses 3 slots. Failed model attempts can use slots too.</p>
+        <div class="quota-explanation">
+          @if (!quotaBlockedReason) { <p>One generation creates 3 recipes and uses 3 recipe slots.</p> }
+          <p>Reserved slots count as used, even when generation fails.</p>
+        </div>
       </div>
 
       <div class="counter-grid">

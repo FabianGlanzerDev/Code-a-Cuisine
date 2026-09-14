@@ -69,9 +69,10 @@ function quotaFailure(): void {
 /** Applies the three-slot rule independently to IP and system counters. */
 function limits(): void {
   page.quota.set({ ...free, ipUsed: 3, ipRemaining: 0 });
-  expect(page.generationBlockedReason).toContain('IP');
+  expect(page.generationBlockedReason).toContain('Your daily limit');
+  expect(page.generationBlockedReason).toBe(page.quotaBlockedReason);
   page.quota.set({ ...free, systemUsed: 10, systemRemaining: 2 });
-  expect(page.generationBlockedReason).toContain('system');
+  expect(page.generationBlockedReason).toContain('System capacity');
   page.generateRecipes();
   http.expectNone(/** Rejects paid calls. @param r Request. */ r => r.method === 'POST');
   expect(page.showQuantityPopup).toBeFalse();

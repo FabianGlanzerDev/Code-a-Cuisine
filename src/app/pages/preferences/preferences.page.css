@@ -297,3 +297,7 @@
 .quota-refresh:focus-visible { outline: 3px solid var(--green-dark); outline-offset: 3px; }
 .quota-refresh:disabled { opacity: 0.65; cursor: wait; }
 @media (prefers-reduced-motion: reduce) { .quota-refresh { transition: none; } }
+
+.quota-summary { min-height: 60px; }
+.quota-explanation { min-height: 80px; }
+@media (max-width: 767px) { .quota-summary { min-height: 100px; } .quota-explanation { min-height: 120px; } }
