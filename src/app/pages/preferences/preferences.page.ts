@@ -1,6 +1,6 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TitleCasePipe } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { finalize, Observable, of, switchMap } from 'rxjs';
 import { SiteHeaderComponent } from '../../components/site-header/site-header.component';
@@ -10,19 +10,22 @@ import { RecipeApiService } from '../../services/recipe-api.service';
 import { RecipeGeneratorService } from '../../services/recipe-generator.service';
 import { RecipeStoreService } from '../../services/recipe-store.service';
 import { LoadingOverlayComponent } from '../loading-overlay/loading-overlay.component';
-import { FocusDialogDirective } from '../../components/focus-dialog.directive';
+import { InputErrorDialogComponent } from '../../components/input-error-dialog.component';
 
 @Component({
   selector: 'app-preferences-page',
-  imports: [RouterLink, TitleCasePipe, SiteHeaderComponent, LoadingOverlayComponent, FocusDialogDirective],
+  imports: [RouterLink, TitleCasePipe, SiteHeaderComponent, LoadingOverlayComponent, InputErrorDialogComponent],
   templateUrl: './preferences.page.html',
   styleUrl: './preferences.page.css',
 })
 export class PreferencesPage implements OnInit {
+  @ViewChild('generateTrigger') generateTrigger?: ElementRef<HTMLButtonElement>;
   loading = false;
   errorMessage = '';
   showQuantityPopup = false;
+  popupMessage = 'It looks like some ingredient quantities aren’t sufficient for your selected servings. Please add or adjust quantities and try again.';
   quotaError = '';
+  quotaChecking = false;
 
   /**
    * Initializes the component or service with its required dependencies.
@@ -46,8 +49,7 @@ export class PreferencesPage implements OnInit {
    * Loads the currently available quota without blocking the page.
    */
   ngOnInit(): void {
-    this.quota.load().subscribe({ next: /** Applies a successful asynchronous result. @param status Current callback input. */ (status) => this.quota.set(status),
-      error: /** Handles a failed asynchronous operation. */ () => this.quotaError = 'Quota could not be loaded. The backend will check availability when you generate.' });
+    this.refreshQuota();
   }
 
 
@@ -121,9 +123,35 @@ export class PreferencesPage implements OnInit {
    * @returns {boolean} The result of this operation.
    */
   get generationDisabled(): boolean {
-    const status = this.quota.status;
-    return this.loading || !!this.store.pendingRecipes.length || !this.generator.canGenerate()
-      || !!status && (status.ipRemaining < 3 || status.systemRemaining < 3);
+    return !!this.generationBlockedReason;
+  }
+
+
+
+  /** Explains exactly the same conditions used by the Generate button. */
+  get generationBlockedReason(): string {
+    if (this.loading) return 'A request is already in progress.';
+    if (this.quotaChecking) return 'Checking available recipe slots…';
+    if (this.quotaError || !this.quota.status) return 'Availability is unknown. Please check recipe slots again.';
+    if (this.store.pendingRecipes.length) return 'Confirm saving the previous recipes before generating again.';
+    if (!this.generator.requirements.ingredients.length) return 'Add ingredients before generating a recipe.';
+    if (!this.generator.canGenerate()) return 'Finish editing ingredients and choose all preferences with valid portions and cooks.';
+    if (this.quota.status.ipRemaining < 3) return 'Your daily recipe limit is reached. Three free IP slots are required.';
+    if (this.quota.status.systemRemaining < 3) return 'The daily system limit is reached. Three free system slots are required.';
+    return '';
+  }
+
+
+
+  /** Explicit read-only retry; never starts recipe generation. */
+  refreshQuota(): void {
+    if (this.quotaChecking) return;
+    this.quotaChecking = true;
+    this.quotaError = '';
+    this.quota.invalidate();
+    this.quota.load().pipe(finalize(/** Releases the check even after a timeout. */ () => this.quotaChecking = false)).subscribe({
+      error: /** Keeps unknown availability distinct from free slots. */ () => this.quotaError = 'Recipe slots could not be checked. Please try again.',
+    });
   }
 
 
@@ -144,6 +172,7 @@ export class PreferencesPage implements OnInit {
   /**
    * Closes the ingredient-quantity popup.
    */
+  @HostListener('document:keydown.escape')
   closeQuantityPopup(): void {
     this.showQuantityPopup = false;
   }
@@ -155,7 +184,10 @@ export class PreferencesPage implements OnInit {
    */
   backToIngredients(): void {
     this.showQuantityPopup = false;
-    void this.router.navigate(['/generate-recipe']);
+    const targetDocument = this.generateTrigger?.nativeElement.ownerDocument;
+    void this.router.navigate(['/generate-recipe']).then(/** Focuses the ingredient field after the destination renders. */ () => {
+      requestAnimationFrame(/** Waits for the new page view. */ () => targetDocument?.querySelector<HTMLInputElement>('#ingredient')?.focus());
+    });
   }
 
 
@@ -216,7 +248,8 @@ export class PreferencesPage implements OnInit {
       return;
     }
     const message = this.generationErrorMessage(error);
-    if (this.isQuantityError(message)) {
+    if (this.isQuantityError(error) || this.isInputError(error)) {
+      this.popupMessage = this.isInputError(error) ? message : 'It looks like some ingredient quantities aren’t sufficient for your selected servings. Please add or adjust quantities and try again.';
       this.showQuantityPopup = true;
       this.errorMessage = '';
       return;
@@ -234,17 +267,46 @@ export class PreferencesPage implements OnInit {
   private generationErrorMessage(error: unknown): string {
     const detail = error instanceof HttpErrorResponse ? error.error?.detail : undefined;
     if (error instanceof HttpErrorResponse) this.quota.set(error.error?.quota);
-    return typeof detail === 'string' ? detail : 'Recipe generation failed. Please try again later.';
+    if (error instanceof HttpErrorResponse && (error.status >= 500 || error.status === 0) && !error.error?.quota) this.reconcileQuota();
+    if (error instanceof HttpErrorResponse && error.error?.code === 'MODEL_OUTPUT_INVALID') return 'The generated recipes failed technical validation. This does not mean your ingredients are insufficient. Reserved recipe slots remain used today. No automatic retry was made.';
+    if (typeof detail === 'string') return detail;
+    if (error instanceof HttpErrorResponse && (error.status >= 500 || error.status === 0)) {
+      return 'The generation service could not complete the request. This is a technical error, not a daily-limit message. Slots may already be reserved and recipes may still be processing. Check the cookbook later before another attempt.';
+    }
+    return 'Recipe generation failed. Please try again later.';
+  }
+
+
+
+  /** Reads quota once after an ambiguous failure; never repeats generation. */
+  private reconcileQuota(): void {
+    this.quota.invalidate();
+    this.quotaChecking = true;
+    this.quotaError = 'Checking whether recipe slots were reserved...';
+    this.quota.load().pipe(finalize(/** Releases the quota-check state. */ () => this.quotaChecking = false)).subscribe({
+      next: /** Clears the temporary status after a successful read. */ () => this.quotaError = '',
+      error: /** Explains why no remaining quota is displayed. */ () => this.quotaError = 'Remaining quota is unknown. The failed request may have reserved recipe slots.',
+    });
   }
 
 
 
   /**
-   * Detects backend wording that indicates insufficient quantities for the selected servings.
-   * @param message Readable error message.
+   * Accepts only the reserved, explicit quantity-error contract; the current backend does not emit it.
+   * @param error Structured server error.
    * @returns {boolean} The result of this operation.
    */
-  private isQuantityError(message: string): boolean {
-    return /not enough|insufficient|quantit(?:y|ies)|selected servings/i.test(message);
+  private isQuantityError(error: unknown): boolean {
+    return error instanceof HttpErrorResponse && error.status === 422
+      && error.error?.code === 'INSUFFICIENT_INGREDIENT_QUANTITIES'
+      && error.error?.portionsAmount === this.generator.requirements.portionsAmount;
+  }
+
+
+
+  /** Accepts only explicitly classified backend input errors, never generic HTTP failures. @param error Server failure. */
+  private isInputError(error: unknown): boolean {
+    return error instanceof HttpErrorResponse && error.status === 400
+      && error.error?.code === 'INVALID_RECIPE_INPUT' && typeof error.error?.detail === 'string';
   }
 }

@@ -14,6 +14,7 @@
   min-height: 100dvh;
   max-width: var(--content-max);
   margin: 0 auto;
+  padding-block: 128px 40px;
   align-items: center;
   justify-content: center;
 }
@@ -39,3 +40,5 @@
   font-size: clamp(2.5rem, 6vw, 3rem);
   font-weight: 700;
 }
+
+@media (max-height: 700px) { .loading-shell { padding-block: 100px 24px; } .loading-content img { height: min(260px, 45dvh); } }

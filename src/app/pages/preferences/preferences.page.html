@@ -2,7 +2,7 @@
 <app-loading-overlay />
 }
 
-<main class="page-shell preferences-page" [attr.inert]="showQuantityPopup || loading ? '' : null">
+<main class="page-shell preferences-page" [hidden]="loading" [attr.inert]="showQuantityPopup || loading ? '' : null">
   <div class="content content--green">
     <app-site-header />
 
@@ -14,14 +14,17 @@
     <section class="preferences-content">
       <h1>Choose your preferences</h1>
 
-      @if (quota.status) {
-      <p class="quota-status" aria-live="polite">
-        Today: {{ quota.status.ipRemaining }} of {{ quota.status.ipLimit }} recipe suggestions available for your IP.
-        System capacity: {{ quota.status.systemRemaining }} of {{ quota.status.systemLimit }}.
-        Each request reserves 3 recipes. Daily reset: midnight UTC.
-      </p>
-      }
-      @if (quotaError) { <p class="quota-status" role="status">{{ quotaError }}</p> }
+      <div class="quota-status" role="status" aria-live="polite">
+        @if (quotaError) { <p>{{ quotaError }}</p> }
+        @else if (quota.status; as status) {
+          <p>Your IP: {{ status.ipRemaining }}/{{ status.ipLimit }} recipe slots. System: {{ status.systemRemaining }}/{{ status.systemLimit }}.</p>
+          @if (status.systemRemaining < 3) { <p>System limit reached. Reset: midnight UTC.</p> }
+          @else if (status.ipRemaining < 3) { <p>Your daily limit is reached. Reset: midnight UTC.</p> }
+          @else { <p>Daily reset: midnight UTC.</p> }
+        } @else { <p>Checking available recipe slots…</p> }
+        @if (quotaError && !quotaChecking) { <button type="button" (click)="refreshQuota()">Check recipe slots again</button> }
+        <p>One generation uses 3 slots. Failed model attempts can use slots too.</p>
+      </div>
 
       <div class="counter-grid">
         <section>
@@ -58,44 +61,44 @@
       </div>
 
       <section class="preference-card">
-        <div class="preference-group">
-          <h2><img src="img/Frame 750.svg" alt="">Cooking time:</h2>
+        <div class="preference-group" role="radiogroup" aria-labelledby="time-heading">
+          <h2 id="time-heading"><img src="img/Frame 750.svg" alt="">Cooking time:</h2>
           <div class="time-options">
             @for (time of store.cookingTimes; track time.value) {
             <div class="time-option">
-              <button class="chip" type="button" [attr.aria-pressed]="generator.requirements.cookingTime === time.value"
-                [class.chip--selected]="generator.requirements.cookingTime === time.value"
-                (click)="choose('cookingTime', time.value)">
+              <label class="chip" [class.chip--selected]="generator.requirements.cookingTime === time.value">
+                <input class="chip-radio" type="radio" name="cookingTime" [value]="time.value"
+                  [checked]="generator.requirements.cookingTime === time.value" (change)="choose('cookingTime', time.value)">
                 {{ time.label }}
-              </button>
+              </label>
               <span class="time-hint">{{ time.hint }}</span>
             </div>
             }
           </div>
         </div>
 
-        <div class="preference-group">
-          <h2><img src="img/public.svg" alt="">Cuisine</h2>
+        <div class="preference-group" role="radiogroup" aria-labelledby="cuisine-heading">
+          <h2 id="cuisine-heading"><img src="img/public.svg" alt="">Cuisine</h2>
           <div class="chip-row">
             @for (cuisine of store.cuisines; track cuisine.name) {
-            <button class="chip" type="button" [attr.aria-pressed]="generator.requirements.cuisine === cuisine.name"
-              [class.chip--selected]="generator.requirements.cuisine === cuisine.name"
-              (click)="choose('cuisine', cuisine.name)">
-              {{ cuisine.name | titlecase }}
-            </button>
+            <label class="chip" [class.chip--selected]="generator.requirements.cuisine === cuisine.name">
+                <input class="chip-radio" type="radio" name="cuisine" [value]="cuisine.name"
+                  [checked]="generator.requirements.cuisine === cuisine.name" (change)="choose('cuisine', cuisine.name)">
+                {{ cuisine.name | titlecase }}
+              </label>
             }
           </div>
         </div>
 
-        <div class="preference-group">
-          <h2><img src="img/fork_spoon.svg" alt="">Diet preferences</h2>
+        <div class="preference-group" role="radiogroup" aria-labelledby="diet-heading">
+          <h2 id="diet-heading"><img src="img/fork_spoon.svg" alt="">Diet preferences</h2>
           <div class="chip-row">
             @for (diet of store.dietPreferences; track diet) {
-            <button class="chip" type="button" [attr.aria-pressed]="generator.requirements.dietPreferences === diet"
-              [class.chip--selected]="generator.requirements.dietPreferences === diet"
-              (click)="choose('dietPreferences', diet)">
-              {{ diet === 'no preferences' ? 'No preferences' : (diet | titlecase) }}
-            </button>
+            <label class="chip" [class.chip--selected]="generator.requirements.dietPreferences === diet">
+                <input class="chip-radio" type="radio" name="dietPreferences" [value]="diet"
+                  [checked]="generator.requirements.dietPreferences === diet" (change)="choose('dietPreferences', diet)">
+                {{ diet === 'no preferences' ? 'No preferences' : (diet | titlecase) }}
+              </label>
             }
           </div>
         </div>
@@ -112,7 +115,10 @@
       <button class="button button--primary" type="button" [disabled]="loading" (click)="checkStorage()">Check saved recipes</button>
       }
 
-      <button class="button button--primary generate-button" type="button" [disabled]="generationDisabled"
+      <p id="generation-blocked" role="status">{{ generationBlockedReason }}
+        @if (!generator.requirements.ingredients.length) { <a routerLink="/generate-recipe">Go to ingredients →</a> }
+      </p>
+      <button [attr.aria-describedby]="generationBlockedReason ? 'generation-blocked' : null" class="button button--primary generate-button" #generateTrigger type="button" [disabled]="generationDisabled"
         (click)="generateRecipes()">Generate a recipe</button>
     </section>
   </div>
@@ -120,17 +126,5 @@
 
 
 @if (showQuantityPopup) {
-<div class="quantity-modal-backdrop" role="presentation" (click)="closeQuantityPopup()" (keydown.escape)="closeQuantityPopup()">
-  <section class="quantity-modal" appFocusDialog role="dialog" aria-modal="true" aria-labelledby="quantity-modal-title"
-    (click)="$event.stopPropagation()">
-    <button class="quantity-modal__close" type="button" aria-label="Close" (click)="closeQuantityPopup()">×</button>
-    <h2 id="quantity-modal-title">Ups! Not quite enough...</h2>
-    <p>It looks like some ingredient quantities aren't sufficient for your selected servings. Please add or adjust
-      quantities and try again.</p>
-    <button class="quantity-modal__back" type="button" (click)="backToIngredients()">
-      <span>Go back to ingredients</span>
-      <img src="img/Arrow 18.svg" alt="">
-    </button>
-  </section>
-</div>
+<app-input-error-dialog [message]="popupMessage" [returnFocus]="generateTrigger" (closed)="closeQuantityPopup()" (back)="backToIngredients()" />
 }

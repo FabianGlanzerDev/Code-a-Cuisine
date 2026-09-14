@@ -1,7 +1,8 @@
-import { AfterViewInit, Directive, ElementRef, HostListener, OnDestroy } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, HostListener, Input, OnDestroy } from '@angular/core';
 
 @Directive({ selector: '[appFocusDialog]' })
 export class FocusDialogDirective implements AfterViewInit, OnDestroy {
+  @Input() dialogReturnFocus: HTMLElement | null = null;
   private previousFocus: HTMLElement | null = null;
 
   /**
@@ -14,7 +15,7 @@ export class FocusDialogDirective implements AfterViewInit, OnDestroy {
 
   /** Moves keyboard focus into the newly opened dialog. */
   ngAfterViewInit(): void {
-    this.previousFocus = this.element.nativeElement.ownerDocument.activeElement as HTMLElement | null;
+    this.previousFocus = this.dialogReturnFocus ?? this.element.nativeElement.ownerDocument.activeElement as HTMLElement | null;
     this.focusableElements()[0]?.focus();
   }
 
@@ -40,7 +41,9 @@ export class FocusDialogDirective implements AfterViewInit, OnDestroy {
 
   /** Restores focus to the previous control when the modal closes. */
   ngOnDestroy(): void {
-    this.previousFocus?.focus();
+    queueMicrotask(/** Restores focus after Angular removes inert from the background. */ () => {
+      if (this.previousFocus?.isConnected && !this.previousFocus.closest('[inert]')) this.previousFocus.focus();
+    });
   }
 
 

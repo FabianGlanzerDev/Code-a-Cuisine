@@ -5,11 +5,15 @@ import { SiteHeaderComponent } from '../../components/site-header/site-header.co
 import { IngredientEntry } from '../../models/recipe.model';
 import { RecipeGeneratorService } from '../../services/recipe-generator.service';
 
+import { InputErrorDialogComponent } from '../../components/input-error-dialog.component';
+
+import ingredients from '../../data/ingredients.json';
+
 interface UnitOption { name: string; abbreviation: string; }
 
 @Component({
   selector: 'app-ingredient-entry-page',
-  imports: [FormsModule, SiteHeaderComponent],
+  imports: [FormsModule, SiteHeaderComponent, InputErrorDialogComponent],
   templateUrl: './ingredient-entry.page.html',
   styleUrl: './ingredient-entry.page.css',
 })
@@ -20,18 +24,14 @@ export class IngredientEntryPage {
     { name: 'gram', abbreviation: 'g' },
   ];
 
-  private readonly knownIngredients = [
-    'Apple', 'Avocado', 'Baby spinach', 'Bacon', 'Banana', 'Basil', 'Beef', 'Bell pepper',
-    'Broccoli', 'Butter', 'Carrot', 'Cheese', 'Cherry tomatoes', 'Chicken', 'Chickpeas',
-    'Cucumber', 'Egg', 'Garlic', 'Lemon', 'Lentils', 'Milk', 'Mushrooms', 'Onion', 'Pasta',
-    'Pastrami', 'Passionfruit', 'Potato', 'Rice', 'Salmon', 'Tomato', 'Tuna', 'Yogurt',
-  ];
+  private readonly knownIngredients = ingredients;
 
   selectedUnit = this.units[2];
   ingredientName = '';
   servingSize = 100;
   dropdownOpen = false;
   errorMessage = '';
+  showInputPopup = false;
 
   editingIngredient: IngredientEntry | null = null;
   editServingSize = 1;
@@ -124,7 +124,7 @@ export class IngredientEntryPage {
     const name = this.ingredientName.trim();
     const amount = Number(this.servingSize);
     this.errorMessage = this.validateNewIngredient(name, amount);
-    if (this.errorMessage) return;
+    if (this.errorMessage) { this.showInputPopup = true; return; }
     this.generator.addIngredient(this.createIngredient(name, amount));
     this.resetIngredientInput();
   }
@@ -139,6 +139,8 @@ export class IngredientEntryPage {
    */
   private validateNewIngredient(name: string, amount: number): string {
     if (!name || name.length > 80 || !/[\p{L}]/u.test(name) || !/^[\p{L}\p{N} .,'’()\-/]+$/u.test(name)) return 'Please enter a valid ingredient name (up to 80 characters).';
+    if (!this.knownIngredients.some(/** Matches a catalog name. @param food Known food. */ food => food.toLowerCase() === name.toLowerCase())) return 'This food is not in our English/German ingredient list yet. Check the spelling, use a suggestion or ask the site owner to add it. / Zutat noch unbekannt: Schreibweise prüfen oder Aufnahme anfragen.';
+    if (!this.units.includes(this.selectedUnit)) return 'Please select g, ml or pieces.';
     if (!Number.isFinite(amount) || amount <= 0 || amount > 10000) return 'Please enter an amount greater than 0 and at most 10000.';
     const entries = this.generator.requirements.ingredients;
     if (entries.length >= 30) return 'You can add at most 30 ingredients.';
@@ -173,14 +175,17 @@ export class IngredientEntryPage {
    */
   saveEdit(ingredient: IngredientEntry): void {
     const amount = Number(this.editServingSize);
+    if (!this.units.includes(this.editUnit)) { this.errorMessage = 'Please select g, ml or pieces.'; this.showInputPopup = true; return; }
     if (!Number.isFinite(amount) || amount <= 0 || amount > 10000) {
       this.errorMessage = 'Please enter an amount greater than 0 and at most 10000.';
+      this.showInputPopup = true;
       return;
     }
     this.errorMessage = '';
 
     ingredient.servingSize = `${amount}${this.editUnit.abbreviation}`;
     ingredient.isEditMode = false;
+    this.generator.saveDraft();
     this.editingIngredient = null;
     this.editUnitDropdownOpen = false;
   }
@@ -205,7 +210,12 @@ export class IngredientEntryPage {
    * Moves to preferences when at least one ingredient exists.
    */
   continueToPreferences(): void {
-    if (!this.generator.requirements.ingredients.length || this.editingIngredient) return;
+    if (this.editingIngredient) return;
+    if (!this.generator.requirements.ingredients.length) {
+      this.errorMessage = 'Please add at least one ingredient with a positive amount before continuing.';
+      this.showInputPopup = true;
+      return;
+    }
     void this.router.navigate(['/choose-preferences']);
   }
 
@@ -254,5 +264,15 @@ export class IngredientEntryPage {
   private resetIngredientInput(): void {
     this.ingredientName = '';
     this.servingSize = 100;
+  }
+
+
+
+  /** Closes the dialog and focuses the unchanged ingredient form. @param page Current page element. */
+  backToInput(page: HTMLElement): void {
+    this.showInputPopup = false;
+    requestAnimationFrame(/** Waits for dialog teardown and its focus restoration. */ () => {
+      requestAnimationFrame(/** Focuses the form after background interaction is restored. */ () => page.querySelector<HTMLInputElement>('#ingredient')?.focus());
+    });
   }
 }

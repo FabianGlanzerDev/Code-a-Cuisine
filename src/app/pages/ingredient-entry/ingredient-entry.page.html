@@ -1,9 +1,9 @@
-<main class="page-shell ingredient-page" (click)="dropdownOpen = false; editUnitDropdownOpen = false">
+<main #ingredientPage [attr.inert]="showInputPopup ? '' : null" class="page-shell ingredient-page" (click)="dropdownOpen = false; editUnitDropdownOpen = false">
   <div class="content content--green">
     <app-site-header [linked]="true" />
 
     <section class="ingredient-intro">
-      <h1>Generate a recipe</h1>
+      <h1>Generate recipe</h1>
       <p>Got random stuff in your kitchen? Pop it in - we've got the perfect recipe waiting.</p>
     </section>
 
@@ -54,6 +54,7 @@
               </button>
             </div>
           </div>
+          <div class="ingredient-feedback" aria-live="polite">@if (errorMessage) { <p class="ingredient-error">{{ errorMessage }}</p> }</div>
         </form>
 
         <section class="ingredient-list-card" aria-labelledby="ingredient-list-title">
@@ -114,11 +115,14 @@
         </section>
       </div>
 
-      @if (errorMessage) { <p role="alert">{{ errorMessage }}</p> }
       <button class="button button--primary ingredient-next" type="button"
-        [disabled]="!generator.requirements.ingredients.length || !!editingIngredient" (click)="continueToPreferences()">
+        [disabled]="!!editingIngredient" (click)="continueToPreferences()">
         Next step
       </button>
     </div>
   </div>
 </main>
+
+@if (showInputPopup) {
+<app-input-error-dialog [message]="errorMessage" (closed)="showInputPopup = false" (back)="backToInput(ingredientPage)" />
+}

@@ -1,6 +1,6 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
-import { TestBed } from '@angular/core/testing';
+import { fakeAsync, tick, TestBed } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { PreferencesPage } from './preferences.page';
 import { RecipeApiService } from '../../services/recipe-api.service';
@@ -23,6 +23,7 @@ function configurePreferences(): void {
   TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
   const generator = TestBed.inject(RecipeGeneratorService);
   generator.requirements = structuredClone(requirements);
+  TestBed.inject(QuotaService).set({ ipLimit: 3, ipUsed: 0, ipRemaining: 3, systemLimit: 12, systemUsed: 0, systemRemaining: 12 });
   store = TestBed.inject(RecipeStoreService);
   http = TestBed.inject(HttpTestingController);
   router = jasmine.createSpyObj('Router', ['navigate']);
@@ -122,19 +123,131 @@ function retriesBackendStorage(): void {
 
 
 
+/** Verifies the global cost limit. */
+function blocksGlobalQuota(): void {
+    page.quota.set({ ipLimit: 3, ipUsed: 0, ipRemaining: 3, systemLimit: 12, systemUsed: 12, systemRemaining: 0 });
+    page.generateRecipes();
+    expect(page.generationDisabled).toBeTrue();
+    http.expectNone(/** Matches model requests. @param request HTTP request. */ request => request.method === 'POST');
+
+}
+
+
+
+/** Verifies gateway failure handling. */
+function reportsGatewayError(): void {
+    page.generateRecipes();
+    http.expectOne(/** Matches generation. @param request HTTP request. */ request => request.method === 'POST')
+      .flush('Bad Gateway', { status: 502, statusText: 'Bad Gateway' });
+    expect(page.errorMessage).toContain('technical error');
+    expect(page.loading).toBeFalse();
+    expect(page.showQuantityPopup).toBeFalse();
+    http.expectOne(/** Matches the single reconciliation read. @param request HTTP request. */ request => request.method === 'GET')
+      .flush({ ipLimit: 3, ipUsed: 3, ipRemaining: 0, systemLimit: 12, systemUsed: 3, systemRemaining: 9 });
+    expect(page.generationDisabled).toBeTrue();
+    http.expectNone(/** Detects forbidden retries. @param request HTTP request. */ request => request.method === 'POST');
+
+}
+
+
+
+/** Separates an explicit future quantity contract from technical, schema and quota errors. */
+function quantityErrorCases(): void {
+  for (const [status, code, portions, opens] of [[422, 'INSUFFICIENT_INGREDIENT_QUANTITIES', 2, true],
+    [422, 'INSUFFICIENT_INGREDIENT_QUANTITIES', 12, false], [422, 'SCHEMA_REJECTED', 2, false],
+    [502, 'MODEL_OUTPUT_INVALID', 2, false], [422, 'MODEL_QUANTITY_EXCEEDS_AVAILABLE', 2, false], [502, 'MODEL_UNAVAILABLE', 2, false], [400, '', 2, false], [502, 'INSUFFICIENT_INGREDIENT_QUANTITIES', 2, false],
+    [429, 'IP_LIMIT', 2, false], [429, 'SYSTEM_LIMIT', 2, false], [0, '', 2, false]] as const) {
+    it('quantity dialog classification ' + status + '/' + code + '/' + portions, /** Checks one isolated response. */ () => {
+      page.generateRecipes();
+      http.expectOne(/** Finds the sole model request. @param request HTTP request. */ request => request.method === 'POST')
+        .flush({ code, portionsAmount: portions, detail: 'Insufficient quantities for selected servings.', quota: { ipLimit: 3, ipUsed: 0, ipRemaining: 3, systemLimit: 12, systemUsed: 0, systemRemaining: 12 } }, { status, statusText: 'Test error' });
+      expect(page.showQuantityPopup).toBe(opens);
+      expect(page.loading).toBeFalse();
+    });
+  }
+}
+
+
+
+/** Keeps original input and preferences when returning from the dialog. */
+function retainsQuantityInputs(): void {
+  const before = structuredClone(page.generator.requirements);
+  router.navigate.and.resolveTo(true);
+  page.showQuantityPopup = true;
+  page.backToIngredients();
+  expect(page.showQuantityPopup).toBeFalse();
+  expect(page.generator.requirements).toEqual(before);
+  expect(router.navigate).toHaveBeenCalledWith(['/generate-recipe']);
+}
+
+
+
+/** Ends a stalled generation without retrying. */
+function stalledGeneration(): void {
+    page.generateRecipes();
+    const generation = http.expectOne(/** Captures the only model request. */ request => request.method === 'POST');
+    tick(240000);
+    expect(generation.cancelled).toBeTrue();
+    expect(page.loading).toBeFalse();
+    expect(page.showQuantityPopup).toBeFalse();
+    expect(page.errorMessage).toContain('technical error');
+    http.expectOne(/** Captures the sole quota reconciliation. */ request => request.method === 'GET').flush({ ipLimit: 3, ipUsed: 3, ipRemaining: 0, systemLimit: 12, systemUsed: 3, systemRemaining: 9 });
+    http.expectNone(/** Rejects automatic model retries. */ request => request.method === 'POST');
+}
+
+
+
+/** Registers recovery cases without a model or production database. */
+function registerRecoveryCases(): void {
+  it('ends a stalled generation and reconciles quota once without opening the quantity dialog', fakeAsync(stalledGeneration));
+  it('retains inputs when leaving the quantity dialog', retainsQuantityInputs);
+  it('keeps configuration failures outside the input dialog', rejectsConfigurationPopup);
+}
+
+
+
 /**
  * Registers the user-visible generation failure regressions.
  */
 function preferencesSuite(): void {
   beforeEach(configurePreferences);
   afterEach(/** Verifies and cleans up the completed test. */ () => http.verify());
+  quantityErrorCases();
+  it('opens the input dialog only for classified invalid input', rejectsInput);
+  registerRecoveryCases();
   it('prevents double generation and rechecks partial storage using only reads', retriesStorageOnly);
   it('requires three available recipe slots', blocksExhaustedQuota);
   it('rejects incomplete generator responses', rejectsIncompleteGeneration);
   it('uses backend-persisted recipes without another write', acceptsBackendPersistence);
   it('retains backend IDs after a denied read without public writes', retriesBackendStorage);
+  it('blocks a globally exhausted quota even with free IP slots', blocksGlobalQuota);
+  it('reports a raw 502 as a technical error without retrying', reportsGatewayError);
 }
 
 
 
 describe('PreferencesPage', preferencesSuite);
+
+
+
+/** Verifies the backend input contract without issuing a real request. */
+function rejectsInput(): void {
+  page.generateRecipes();
+  http.expectOne(/** Matches generation. @param request HTTP request. */ request => request.method === 'POST')
+    .flush({ code: 'INVALID_RECIPE_INPUT', detail: 'Please combine duplicate ingredients.', quota: null }, { status: 400, statusText: 'Bad Request' });
+  expect(page.showQuantityPopup).toBeTrue();
+  expect(page.popupMessage).toBe('Please combine duplicate ingredients.');
+  expect(page.loading).toBeFalse();
+  expect(router.navigate).not.toHaveBeenCalled();
+}
+
+
+
+/** Technical configuration faults must never blame ingredient input. */
+function rejectsConfigurationPopup(): void {
+  page.generateRecipes();
+  http.expectOne(/** Matches generation. @param request HTTP request. */ request => request.method === 'POST')
+    .flush({ code: 'BACKEND_CONFIGURATION_ERROR', detail: 'Contact the site operator.', quota: null }, { status: 400, statusText: 'Bad Request' });
+  expect(page.showQuantityPopup).toBeFalse();
+  expect(page.errorMessage).toBe('Contact the site operator.');
+}

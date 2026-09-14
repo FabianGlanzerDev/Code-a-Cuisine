@@ -1,0 +1,8 @@
+<div class="quantity-modal-backdrop" role="presentation" (click)="closed.emit()" (keydown.escape)="closed.emit()">
+  <section class="quantity-modal" appFocusDialog [dialogReturnFocus]="returnFocus" role="dialog" aria-modal="true" aria-labelledby="quantity-modal-title" aria-describedby="quantity-modal-description" (click)="$event.stopPropagation()">
+    <button class="quantity-modal__close" type="button" aria-label="Close" (click)="closed.emit()">×</button>
+    <h2 id="quantity-modal-title"><span>Ups!</span> Not quite enough...</h2>
+    <p id="quantity-modal-description">{{ message }}</p>
+    <button class="quantity-modal__back" type="button" (click)="back.emit()"><span>Go back to ingredients</span><img src="img/Arrow 18.svg" alt=""></button>
+  </section>
+</div>

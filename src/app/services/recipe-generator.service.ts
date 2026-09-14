@@ -1,12 +1,14 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable } from 'rxjs';
+import { catchError, Observable, throwError, timeout, TimeoutError } from 'rxjs';
 import { environment } from '../../environments/environment';
+import { readBrowserValue, writeBrowserValue } from './browser-storage';
+import { validRequirements } from './recipe-requirements';
 import { GenerationResponse, IngredientEntry, RecipeRequirements } from '../models/recipe.model';
 
 @Injectable({ providedIn: 'root' })
 export class RecipeGeneratorService {
-  requirements = this.createDefaults();
+  requirements = this.restoreRequirements();
 
   /**
    * Initializes the component or service with its required dependencies.
@@ -21,7 +23,10 @@ export class RecipeGeneratorService {
    * @returns {Observable<GenerationResponse>} The result of this operation.
    */
   generate(): Observable<GenerationResponse> {
-    return this.http.post<GenerationResponse>(environment.webhookUrl, this.requirements);
+    return this.http.post<GenerationResponse>(environment.webhookUrl, this.requirements).pipe(
+      timeout(240000),
+      catchError(/** Treats an expired client wait as ambiguous network failure without retrying. */ error => throwError(/** Preserves HTTP errors and maps only client timeouts. */ () => error instanceof TimeoutError ? new HttpErrorResponse({ status: 0, statusText: 'Generation response timed out' }) : error)),
+    );
   }
 
 
@@ -35,6 +40,7 @@ export class RecipeGeneratorService {
       ...this.requirements,
       ingredients: [...this.requirements.ingredients, ingredient],
     };
+    this.saveDraft();
   }
 
 
@@ -46,6 +52,7 @@ export class RecipeGeneratorService {
   removeIngredient(ingredient: IngredientEntry): void {
     const index = this.requirements.ingredients.indexOf(ingredient);
     if (index >= 0) this.requirements.ingredients.splice(index, 1);
+    this.saveDraft();
   }
 
 
@@ -59,6 +66,7 @@ export class RecipeGeneratorService {
     const maximum = key === 'portionsAmount' ? 12 : 3;
     const nextValue = this.requirements[key] + delta;
     this.requirements[key] = Math.min(maximum, Math.max(1, nextValue));
+    this.saveDraft();
   }
 
 
@@ -70,6 +78,7 @@ export class RecipeGeneratorService {
    */
   selectPreference(key: 'cookingTime' | 'cuisine' | 'dietPreferences', value: string): void {
     this.requirements[key] = value;
+    this.saveDraft();
   }
 
 
@@ -79,9 +88,24 @@ export class RecipeGeneratorService {
    * @returns {boolean} The result of this operation.
    */
   canGenerate(): boolean {
-    const { ingredients, cookingTime, cuisine, dietPreferences } = this.requirements;
-    return ingredients.length > 0 && ingredients.every(/** Checks whether this item satisfies the validation. @param ingredient Current callback input. */ (ingredient) => !ingredient.isEditMode)
-      && Boolean(cookingTime && cuisine && dietPreferences);
+    return validRequirements(this.requirements) && this.requirements.ingredients.length > 0
+      && this.requirements.ingredients.every(/** Rejects unfinished edits. @param ingredient Draft entry. */ ingredient => !ingredient.isEditMode);
+  }
+
+
+
+  /** Saves only committed ingredient values and preferences, never loading or quota state. */
+  saveDraft(): void {
+    const draft = { ...this.requirements, ingredients: this.requirements.ingredients.map(/** Excludes transient editor state. @param item Ingredient. */ item => ({ ...item, isEditMode: false })) };
+    if (validRequirements(draft)) writeBrowserValue('code-a-cuisine-requirements', draft);
+  }
+
+
+
+  /** Restores a validated draft without trusting arbitrary browser storage. */
+  private restoreRequirements(): RecipeRequirements {
+    const saved = readBrowserValue<unknown>('code-a-cuisine-requirements', null);
+    return validRequirements(saved) ? saved : this.createDefaults();
   }
 
 
@@ -93,7 +117,7 @@ export class RecipeGeneratorService {
   private createDefaults(): RecipeRequirements {
     return {
       ingredients: [], portionsAmount: 2, cooksAmount: 1,
-      cookingTime: 'quick', cuisine: '', dietPreferences: '',
+      cookingTime: 'quick', cuisine: 'german', dietPreferences: 'no preferences',
     };
   }
 }

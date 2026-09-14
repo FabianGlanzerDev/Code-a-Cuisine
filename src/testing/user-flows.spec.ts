@@ -13,10 +13,11 @@ let router: jasmine.SpyObj<Router>;
 
 /** Creates an ingredient form that cannot issue external requests. */
 function configureEntry(): void {
+  spyOn(Storage.prototype, 'getItem').and.returnValue(null);
+  spyOn(Storage.prototype, 'setItem').and.stub();
   generator = new RecipeGeneratorService(jasmine.createSpyObj<HttpClient>('HttpClient', ['post']));
   router = jasmine.createSpyObj<Router>('Router', ['navigate']);
   entry = new IngredientEntryPage(generator, router);
-  spyOn(Storage.prototype, 'getItem').and.returnValue(null);
 }
 
 
