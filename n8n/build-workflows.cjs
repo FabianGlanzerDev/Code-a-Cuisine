@@ -178,31 +178,16 @@ function statusWorkflow() {
  */
 function writeWorkflow(filename, workflow) {
   const target = path.join(__dirname, filename);
-  preserveDeployment(target, workflow);
+  const previous = JSON.parse(fs.readFileSync(target, 'utf8'));
+  workflow = { ...previous, nodes: previous.nodes.map(/** Refreshes source-generated code without changing deployment configuration. @param existing Configured node. */ existing => {
+    const source = workflow.nodes.find(/** Matches the stable display name. @param item Generated node. */ item => item.name === existing.name);
+    if (!source) throw new Error('Unrecognized deployed node: ' + existing.name);
+    return existing.type === 'n8n-nodes-base.code' && existing.name !== 'Backend Configuration'
+      ? { ...existing, parameters: { ...existing.parameters, jsCode: source.parameters.jsCode } } : existing;
+  }) };
   const content = JSON.stringify(workflow, null, 2) + '\n';
   if (checkOnly && fs.readFileSync(target, 'utf8') !== content) throw new Error('Stale workflow export: ' + filename);
   if (!checkOnly) fs.writeFileSync(target, content);
-}
-
-
-
-/** Preserves configured identity and credentials when regenerating an existing export.
- * @param target Existing export path.
- * @param workflow Generated workflow to update.
- */
-function preserveDeployment(target, workflow) {
-  if (!fs.existsSync(target)) return;
-  const previous = JSON.parse(fs.readFileSync(target, 'utf8'));
-  for (const key of ['id', 'active', 'versionId']) if (key in previous) workflow[key] = previous[key];
-  if (previous.settings?.errorWorkflow && !previous.settings.errorWorkflow.startsWith('SET_')) workflow.settings.errorWorkflow = previous.settings.errorWorkflow;
-  for (const next of workflow.nodes) {
-    const old = previous.nodes.find(/** Matches a stable node name. @param node Existing node. */ node => node.name === next.name || renamedNodes[node.name] === next.name);
-    if (!old) continue;
-    next.id = old.id;
-    if (old.credentials) next.credentials = old.credentials;
-    if (old.webhookId) next.webhookId = old.webhookId;
-    if (next.name === 'Backend Configuration') next.parameters = old.parameters;
-  }
 }
 
 
@@ -211,5 +196,5 @@ const generate = commonWorkflow(false);
 addReservation(generate);
 addGeneration(generate);
 addPersistence(generate);
-writeWorkflow('generate-recipe.workflow.json', generate);
-writeWorkflow('quota-status.workflow.json', statusWorkflow());
+writeWorkflow('exports/generate-recipe-input-popup.json', generate);
+writeWorkflow('exports/quota-status-reviewed.json', statusWorkflow());

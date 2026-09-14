@@ -3,13 +3,13 @@
   "nodes": [
     {
       "parameters": {},
-      "id": "45e7043d-ee64-46cb-8083-3d6b7609a31e",
+      "id": "e0931b33-1c90-47f4-a7e5-133df32c2ec3",
       "name": "Workflow Error Trigger",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
       "position": [
-        0,
-        0
+        896,
+        464
       ],
       "notesInFlow": true,
       "notes": "Starts when an assigned Code a Cuisine workflow fails."
@@ -18,13 +18,13 @@
       "parameters": {
         "jsCode": "const error = $input.first().json;\nconst timestamp = new Date().toISOString();\nconst workflow = String(error.workflow?.name || 'unknown');\nconst execution = String(error.execution?.id || 'trigger-failure');\nconst message = 'Execution failed. Inspect the restricted n8n execution log for details.';\nreturn [{ json: { logKey: `${timestamp}:${execution}`, timestamp, workflow, execution, message } }];"
       },
-      "id": "c35804aa-25cd-45f6-8b9f-f82aa62c5f63",
+      "id": "4cebc62f-f4c1-4590-93cf-749516dffe30",
       "name": "Prepare Sanitized Error Record",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        224,
-        0
+        1120,
+        464
       ],
       "notesInFlow": true,
       "notes": "Normalizes execution error metadata for logging."
@@ -115,13 +115,13 @@
         },
         "options": {}
       },
-      "id": "b119d457-9284-4f54-9869-2d420fa821a8",
+      "id": "486f29fd-48e2-4f8f-82b2-40d9f0a88ac1",
       "name": "Save Sanitized Error Record",
       "type": "n8n-nodes-base.dataTable",
       "typeVersion": 1,
       "position": [
-        448,
-        0
+        1344,
+        464
       ],
       "notesInFlow": true,
       "notes": "Writes the error record to an n8n Data Table."
@@ -135,13 +135,13 @@
         "text": "=Workflow: {{ $json.workflow }}\\nExecution: {{ $json.execution }}\\nTime: {{ $json.timestamp }}\\nError: {{ $json.message }}",
         "options": {}
       },
-      "id": "e809b47d-2fde-4076-9bd2-c7ce9cc507ad",
+      "id": "fa170f52-3df5-4035-a2bf-da48ec813cf5",
       "name": "Notify Operator of Workflow Failure",
       "type": "n8n-nodes-base.emailSend",
       "typeVersion": 2.1,
       "position": [
-        672,
-        0
+        1568,
+        464
       ],
       "notesInFlow": true,
       "webhookId": "47eb64f9-d244-4ab5-bdcc-eb0ba62511c7",
@@ -190,7 +190,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "4a9f58d7-69ef-43a9-b8c7-30f23f83fb72",
+  "versionId": "4a017843-073a-470e-8048-9e83d5790e90",
   "meta": {
     "instanceId": "ad9b5daf0dfb5719b0175233d6e06f24f3f3493d07a52c5757f0d24f1abb78ab"
   },

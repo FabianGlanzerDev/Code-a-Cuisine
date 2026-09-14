@@ -149,7 +149,7 @@ const VALIDATION_RULES = {
   ]
 };
 
-const PANTRY_BASICS = 'salt,pepper,black pepper,water,olive oil,oil,butter,flour,sugar,vinegar,garlic,onion,lemon,lemon juice,paprika,cumin,turmeric,curry powder,soy sauce,basil,oregano,parsley,salz,pfeffer,wasser,olivenöl,öl,mehl,zucker,essig,knoblauch,zwiebel,zitrone'.split(',');
+const PANTRY_BASICS = 'salt,pepper,black pepper,water,olive oil,oil,butter,flour,sugar,vinegar,garlic,onion,lemon,lemon juice,paprika powder,cumin,turmeric,curry powder,soy sauce,basil,oregano,parsley,salz,pfeffer,wasser,olivenöl,öl,mehl,zucker,essig,knoblauch,zwiebel,zitrone'.split(',');
 
 /**
  * Checks a recipe title without accepting empty, duplicate or placeholder headings.
@@ -224,9 +224,10 @@ function validateRecipeIngredients(recipe, request) {
  * @param portions Requested portion count.
  */
 function validateExtras(extras, supplied, portions) {
-  const basics = new Set(PANTRY_BASICS);
+  const basics = new Set(PANTRY_BASICS.map(/** Uses the same identity for pantry aliases. @param ingredient Food name. */ ingredient => foodName({ ingredient })));
   for (const [index, entry] of extras.entries()) {
     withValidationField(`ingredients.extraIngredients[${index}]`, /** Checks one extra. */ () => {
+    if (entry.ingredient?.trim().toLowerCase() === 'paprika') entry.ingredient = 'paprika powder';
     if (!basics.has(recipeFoodName(entry)) || supplied.has(recipeFoodName(entry))) throw new Error('Extra ingredients must be missing pantry basics.');
     entry.ingredient = recipeFoodName(entry);
     scaleIngredient(entry, portions);

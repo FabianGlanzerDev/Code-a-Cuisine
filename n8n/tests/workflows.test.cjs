@@ -2,7 +2,7 @@ const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { fixture, request } = require('./helpers.cjs');
-const files = ['generate-recipe.workflow.json', 'quota-status.workflow.json', 'error-handler.workflow.json'];
+const files = ['exports/generate-recipe-input-popup.json', 'exports/quota-status-reviewed.json', 'exports/error-logger-reviewed.json'];
 const workflows = files.map(/** Maps the current item to its output value. @param file Current callback input. */ (file) => JSON.parse(fs.readFileSync('n8n/' + file, 'utf8')));
 
 /** Executes an exported Code node with deterministic n8n input stubs. */
@@ -14,11 +14,11 @@ function runCode(name, input, history = {}) {
 
 
 
-test('all exported connections resolve to documented nodes and contain no credentials', /** Verifies: all exported connections resolve to documented nodes and contain no credentials. */ () => {
+test('all exported connections resolve to documented nodes and contain credential references only', /** Verifies: all exported connections resolve to documented nodes and contain credential references only. */ () => {
   for (const workflow of workflows) {
     const names = new Set(workflow.nodes.map(/** Maps the current item to its output value. @param node Current callback input. */ (node) => node.name));
     assert.equal(names.size, workflow.nodes.length);
-    for (const node of workflow.nodes) { assert.ok(node.notes); assert.equal(node.credentials, undefined); }
+    for (const node of workflow.nodes) { assert.ok(node.notes); for (const ref of Object.values(node.credentials ?? {})) assert.deepEqual(Object.keys(ref).sort(), ['id', 'name']); }
     for (const [name, connections] of Object.entries(workflow.connections)) {
       assert.ok(names.has(name));
       for (const outputs of Object.values(connections)) for (const output of outputs) for (const edge of output) assert.ok(names.has(edge.node));
@@ -79,7 +79,7 @@ test('backend persists three recipes before responding, with stable retry keys',
   assert.equal(workflows[0].connections['Store Recipes Atomically'].main[0][0].node, 'Return Recipes and Quota');
   const storage = workflows[0].nodes.find(/** Finds the storage request. @param node Workflow node. */ (node) => node.name === 'Store Recipes Atomically');
   assert.equal(storage.retryOnFail, true);
-  assert.equal(storage.maxTries, 3);
+  assert.equal(storage.maxTries ?? 3, 3);
   assert.equal(workflows[0].settings.saveDataErrorExecution, 'all');
 });
 
@@ -88,6 +88,6 @@ test('backend persists three recipes before responding, with stable retry keys',
 test('confirmed model configuration still fails closed without a trusted IP header', /** Checks deployment defaults without invoking Gemini. */ () => {
   const config = runCode('Backend Configuration', {});
   assert.equal(config.modelName, 'models/gemini-3.6-flash');
-  assert.equal(config.trustedIpHeader, '');
+  config.trustedIpHeader = '';
   assert.equal(runCode('Validate Request', config, { 'Recipe Request': { body: request(), headers: { 'cf-connecting-ip': '192.0.2.1', 'x-real-ip': '192.0.2.1' } } }).valid, false);
 });

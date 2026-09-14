@@ -8,6 +8,7 @@ import { RecipeGeneratorService } from '../../services/recipe-generator.service'
 import { InputErrorDialogComponent } from '../../components/input-error-dialog.component';
 
 import ingredients from '../../data/ingredients.json';
+import { canonicalIngredient, ingredientSuggestions } from '../../services/ingredient-catalog';
 
 interface UnitOption { name: string; abbreviation: string; }
 
@@ -55,12 +56,7 @@ export class IngredientEntryPage {
    * @returns {string[]} The result of this operation.
    */
   get ingredientSuggestions(): string[] {
-    const query = this.ingredientName.trim().toLowerCase();
-    if (!query) return [];
-
-    return this.knownIngredients
-      .filter(/** Checks whether the current item matches the filter. @param ingredient Current callback input. */ (ingredient) => ingredient.toLowerCase().startsWith(query))
-      .slice(0, 3);
+    return ingredientSuggestions(this.ingredientName);
   }
 
 
@@ -121,7 +117,7 @@ export class IngredientEntryPage {
    * Adds the current ingredient values to the recipe request.
    */
   addIngredient(): void {
-    const name = this.ingredientName.trim();
+    const name = canonicalIngredient(this.ingredientName);
     const amount = Number(this.servingSize);
     this.errorMessage = this.validateNewIngredient(name, amount);
     if (this.errorMessage) { this.showInputPopup = true; return; }
@@ -144,7 +140,7 @@ export class IngredientEntryPage {
     if (!Number.isFinite(amount) || amount <= 0 || amount > 10000) return 'Please enter an amount greater than 0 and at most 10000.';
     const entries = this.generator.requirements.ingredients;
     if (entries.length >= 30) return 'You can add at most 30 ingredients.';
-    if (entries.some(/** Checks whether this item meets the condition. @param entry Current callback input. */ (entry) => entry.ingredient.toLowerCase() === name.toLowerCase())) return 'This ingredient is already listed. Edit its amount instead.';
+    if (entries.some(/** Checks whether this item meets the condition. @param entry Current callback input. */ (entry) => canonicalIngredient(entry.ingredient).toLowerCase() === name.toLowerCase())) return 'This ingredient is already listed. Edit its amount instead.';
     return '';
   }
 

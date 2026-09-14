@@ -1,7 +1,7 @@
 ﻿const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { quantityGate } = require('../lib/quantity.cjs');
-const workflow = require('../generate-recipe.workflow.json');
+const workflow = require('../exports/generate-recipe-input-popup.json');
 const request = require('./fixtures/execution-136/validated-request.json').request;
 
 test('no approved quantity policy: original #136 and arbitrary units remain unassessed', /** Checks no invented sufficient-portion claim. */ () => {

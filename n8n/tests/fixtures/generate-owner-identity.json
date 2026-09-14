@@ -2,7 +2,7 @@
   "id": "nVrQ3KLEq6mJNb44",
   "nodes": [
     {
-      "id": "8075d348-9839-4fd1-be00-2786670fa258",
+      "id": "f0087e64-5096-4c53-bc2f-a9709a998a8f",
       "name": "Recipe Request",
       "type": "n8n-nodes-base.webhook",
       "parameters": {
@@ -13,28 +13,28 @@
       }
     },
     {
-      "id": "47961b90-ebef-4be0-8aa4-28bc486aeef2",
+      "id": "a61665a8-a3bf-49bd-bd2e-c49e96fba143",
       "name": "Backend Configuration",
       "type": "n8n-nodes-base.code"
     },
     {
-      "id": "1451c57b-4e84-4f9f-bbaf-2bd8ac992327",
+      "id": "0db4c996-305a-4177-8094-64a78740d218",
       "name": "Validate Request",
       "type": "n8n-nodes-base.code"
     },
     {
-      "id": "c2f6cf85-4def-475c-8e86-51232b9b0834",
+      "id": "432e628c-3bc7-445a-83f3-0449ac8b4524",
       "name": "Request Valid?",
       "type": "n8n-nodes-base.if"
     },
     {
-      "id": "39927790-dd16-4e8b-b9f2-3d65a344cf03",
+      "id": "f7fd1b68-3056-42aa-9e39-1971b2617e88",
       "name": "Return Validation Error",
       "type": "n8n-nodes-base.respondToWebhook"
     },
     {
-      "id": "f3c5c43c-89b1-44d4-84c1-631ad505abbc",
-      "name": "Read Atomic Quota",
+      "id": "4b6fd41b-2e36-47b6-a3f2-4699fe05962a",
+      "name": "Read Daily Recipe Slots",
       "type": "n8n-nodes-base.httpRequest",
       "credentials": {
         "googleFirebaseRealtimeDatabaseOAuth2Api": {
@@ -44,28 +44,28 @@
       }
     },
     {
-      "id": "92be44ad-ba2c-4885-83c0-b60e9fbc02ac",
+      "id": "cdfef283-8b38-431b-86ac-01214d2d02ab",
       "name": "Return Backend Error",
       "type": "n8n-nodes-base.respondToWebhook"
     },
     {
-      "id": "9a02de78-8d64-4ece-956d-47cb202a1a7f",
+      "id": "fdcb1853-031c-4ef8-bf2b-53e986bc3a96",
       "name": "Log Technical Failure",
       "type": "n8n-nodes-base.stopAndError"
     },
     {
-      "id": "3a0cca4f-dc1a-454f-9a37-5d88c6474f6c",
-      "name": "Prepare Reservation",
+      "id": "c7bdd29a-cee1-4e65-b1ad-e85fab98e197",
+      "name": "Prepare Three-Slot Reservation",
       "type": "n8n-nodes-base.code"
     },
     {
-      "id": "c6cd7ac2-a40c-4862-b3d8-60d69c0d9318",
-      "name": "Quota Available?",
+      "id": "bd979c6f-15cc-4e55-8dfb-4e3a2cd3c74e",
+      "name": "Enough Daily Recipe Slots?",
       "type": "n8n-nodes-base.if"
     },
     {
-      "id": "8412a00e-48bf-4c9b-acc4-9ef73ab65fc5",
-      "name": "Commit Reservation",
+      "id": "9a60e07d-9da3-4bc2-b637-39edfee961f9",
+      "name": "Reserve Three Recipe Slots",
       "type": "n8n-nodes-base.httpRequest",
       "credentials": {
         "googleFirebaseRealtimeDatabaseOAuth2Api": {
@@ -75,32 +75,32 @@
       }
     },
     {
-      "id": "681829e4-3d16-44ed-8a13-96ae1b97df0f",
-      "name": "Reservation Committed?",
+      "id": "c89550c2-0e1a-45f5-94f7-9c3b3b895241",
+      "name": "Recipe Slots Reserved?",
       "type": "n8n-nodes-base.if"
     },
     {
-      "id": "2341eba4-5205-45cf-ae53-ee75b6e8aa03",
-      "name": "Reservation Conflict?",
+      "id": "46e65044-8181-456b-b718-b85a5bf75dff",
+      "name": "Reservation Write Conflict?",
       "type": "n8n-nodes-base.if"
     },
     {
-      "id": "385a4c8f-d9d0-4831-807d-7c0840c5cb70",
+      "id": "9d2f1350-4867-4a49-930e-04393c05f4e1",
       "name": "Return Quota Error",
       "type": "n8n-nodes-base.respondToWebhook"
     },
     {
-      "id": "48854d8b-cbf8-422f-8b67-dc53a5679668",
+      "id": "42f9baae-6357-4549-88c6-67823da3319f",
       "name": "Return Concurrent Request",
       "type": "n8n-nodes-base.respondToWebhook"
     },
     {
-      "id": "69a83bbf-5631-4307-a6da-bed7d0097a05",
+      "id": "da7335a2-860f-4cd4-9580-8c9b3bfc48f1",
       "name": "Build Model Request",
       "type": "n8n-nodes-base.code"
     },
     {
-      "id": "77a1b43c-f5c8-4162-a6a0-fef83f878389",
+      "id": "b5493094-cf8e-43ec-b8ae-8a90dddfa6dd",
       "name": "Create Three Recipes",
       "type": "n8n-nodes-base.httpRequest",
       "credentials": {
@@ -111,32 +111,32 @@
       }
     },
     {
-      "id": "484d49b8-b928-4c51-997d-f14d7cf3b93d",
+      "id": "fb246b42-8743-4dfb-8484-2116331c2b26",
       "name": "Validate Recipe Output",
       "type": "n8n-nodes-base.code"
     },
     {
-      "id": "61b06a01-5725-4119-b26c-62b2b533379b",
+      "id": "37ff4991-bde4-4c92-bf59-2c77e1d646db",
       "name": "Recipe Output Valid?",
       "type": "n8n-nodes-base.if"
     },
     {
-      "id": "0cb3a3c6-b8aa-4aa0-8972-4d3b98d4a8bf",
+      "id": "c8be5380-44e4-4e01-9278-3c8fd6e0cacf",
       "name": "Return Recipes and Quota",
       "type": "n8n-nodes-base.respondToWebhook"
     },
     {
-      "id": "0f689cbf-07c4-489b-8b53-093f4bb90a79",
+      "id": "02d49322-d92d-43d7-840a-49c5c7020539",
       "name": "Return Recipe Validation Error",
       "type": "n8n-nodes-base.respondToWebhook"
     },
     {
-      "id": "1fb2ecb1-a50b-481b-b351-fdf2b2fc8296",
+      "id": "37d80c3d-7712-4180-b85a-1d165722529c",
       "name": "Prepare Recipe Storage",
       "type": "n8n-nodes-base.code"
     },
     {
-      "id": "efd5ecae-eee9-4d36-8bfc-754591d876dc",
+      "id": "832dd8e9-ca3a-48c3-9eb5-696ad758b18f",
       "name": "Store Recipes Atomically",
       "type": "n8n-nodes-base.httpRequest",
       "credentials": {
@@ -147,27 +147,27 @@
       }
     },
     {
-      "id": "fd1bbaf6-4a8b-48d2-ab88-5fb9b1823bc6",
+      "id": "b4cb0485-e922-4be1-9d18-3c083693d7ed",
       "name": "Return Unsaved Recipes",
       "type": "n8n-nodes-base.respondToWebhook"
     },
     {
-      "id": "dfb4ba5a-ac97-4896-8e92-e8a9029d0f61",
+      "id": "68946f8c-c4d8-4b07-8c5a-a8a9c98522d5",
       "name": "Return Model Error",
       "type": "n8n-nodes-base.respondToWebhook"
     },
     {
-      "id": "assess-ingredient-quantities",
+      "id": "4bd72d00-77d6-42a3-92d3-ecf3539bf60b",
       "name": "Assess Ingredient Quantities",
       "type": "n8n-nodes-base.code"
     },
     {
-      "id": "quantity-rejected-",
+      "id": "18620bf7-83c4-4f75-9d91-24a651421b3c",
       "name": "Quantity Rejected?",
       "type": "n8n-nodes-base.if"
     },
     {
-      "id": "return-quantity-error",
+      "id": "99db8af6-38e2-46cb-99ca-270f942f6e4d",
       "name": "Return Quantity Error",
       "type": "n8n-nodes-base.respondToWebhook"
     }

@@ -8,6 +8,7 @@ const path = require('node:path');
 function library(names) {
   return names.map(/** Maps the current item to its output value. @param name Current callback input. */ (name) => fs.readFileSync(path.join(__dirname, 'lib', name + '.cjs'), 'utf8')
     .replace("require('../../src/app/data/ingredients.json')", JSON.stringify(require('../src/app/data/ingredients.json')))
+    .replace("require('../../src/app/data/ingredient-aliases.json')", JSON.stringify(require('../src/app/data/ingredient-aliases.json')))
     .replace(/module\.exports = [\s\S]*$/, '').trimEnd()).join('\n\n\n\n') + '\n\n\n\n';
 }
 

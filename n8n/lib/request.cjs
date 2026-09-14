@@ -48,7 +48,16 @@ function validateRequest(item, config, now = Date.now(), statusOnly = false) {
   const dayKey = new Date(now).toISOString().slice(0, 10);
   const ipKey = ip?.replaceAll('.', '_').replaceAll(':', '_') ?? '';
   const code = errors.length > inputErrorCount ? 'BACKEND_CONFIGURATION_ERROR' : inputErrorCount ? 'INVALID_RECIPE_INPUT' : null;
-  return { request, ipKey, dayKey, valid: errors.length === 0, errors, code };
+  return { request: !statusOnly && !errors.length ? canonicalRequest(request) : request, ipKey, dayKey, valid: errors.length === 0, errors, code };
+}
+
+
+
+/** Normalizes accepted aliases while retaining quantities, units and preferences. @param request Valid input. */
+function canonicalRequest(request) {
+  return { ...request, ingredients: request.ingredients.map(/** Uses the shared English identity. @param entry Ingredient. */ entry => ({
+    ...entry, ingredient: INGREDIENT_CATALOG.find(/** Finds canonical spelling. @param name Catalog name. */ name => name.toLowerCase() === foodName(entry)) ?? entry.ingredient,
+  })) };
 }
 
 

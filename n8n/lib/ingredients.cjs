@@ -1,3 +1,4 @@
+const INGREDIENT_ALIASES = require('../../src/app/data/ingredient-aliases.json');
 const INGREDIENT_CATALOG = require('../../src/app/data/ingredients.json');
 
 /**
@@ -33,7 +34,8 @@ function validIngredient(entry) {
  * @param entry Ingredient entry to validate.
  */
 function foodName(entry) {
-  return String(entry?.ingredient ?? '').trim().toLowerCase();
+  const name = String(entry?.ingredient ?? '').trim().toLowerCase();
+  return (INGREDIENT_ALIASES[name] ?? name).toLowerCase();
 }
 
 

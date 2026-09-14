@@ -1,7 +1,7 @@
 ﻿const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const names = require('../node-name-mapping.json');
-const workflows = [require('../exports/generate-recipe-input-popup.json'), require('../quota-status.workflow.json'), require('../error-handler.workflow.json'), require('../exports/quota-status-reviewed.json'), require('../exports/error-logger-reviewed.json')];
+const workflows = [require('../exports/generate-recipe-input-popup.json'), require('../exports/quota-status-reviewed.json'), require('../exports/error-logger-reviewed.json')];
 
 /** Checks graph and expression targets after renaming without executing external nodes. */
 function validReferences() {
@@ -46,7 +46,7 @@ test('owner workflow IDs, credentials and webhook parameters remain unchanged', 
  */
 function originalDigest(workflow, logger = false) {
   const copy = structuredClone(workflow);
-  if (logger) copy.nodes.find(/** Selects the logger code. @param node Node. */ node => node.type === 'n8n-nodes-base.code').parameters.jsCode = '[sanitized logger code]';
+  for (const node of copy.nodes) if (node.type === 'n8n-nodes-base.code' && node.name !== 'Backend Configuration') node.parameters.jsCode = '[tested source code]';
   let serialized = JSON.stringify(copy);
   for (const [old, next] of Object.entries(names)) serialized = serialized.replaceAll(next, old);
   return require('node:crypto').createHash('sha256').update(serialized).digest('hex');
@@ -56,16 +56,16 @@ function originalDigest(workflow, logger = false) {
 
 /** Protects every owner setting, graph, node ID, credential reference and webhook path. */
 function ownerConfiguration() {
-  assert.equal(originalDigest(workflows[3]), '626d3463324001648c73b3e6506f1c9f85845109ce0901a5024e80d67be0d563');
-  assert.equal(originalDigest(workflows[4], true), '4747ad9c18866ab13b789a034f055710413f9f458078f66127a8a9253bfe5a31');
-  assert.equal(workflows[3].settings.errorWorkflow, workflows[4].id);
+  assert.equal(originalDigest(workflows[1]), 'f518bdbb19537ccab57530d56d7f8b50d0a012a6ec4cd31083d416ec2367df37');
+  assert.equal(originalDigest(workflows[2], true), '31e9d585b4648b77450007dd578e4bee607a0c0f4a15eace89dc28d6d403be3e');
+  assert.equal(workflows[1].settings.errorWorkflow, workflows[2].id);
 }
 
 
 
 /** Ensures raw errors, headers and request bodies cannot reach the table or mail payload. */
 function safeLogger() {
-  const node = workflows[4].nodes.find(/** Locates the sanitizing node. @param item Node. */ item => item.type === 'n8n-nodes-base.code');
+  const node = workflows[2].nodes.find(/** Locates the sanitizing node. @param item Node. */ item => item.type === 'n8n-nodes-base.code');
   const hostile = { workflow: { name: 'Test' }, execution: { id: 136, error: { message: 'Bearer secret-token request-body' } }, headers: { authorization: 'secret-token' } };
   const output = new Function('$input', node.parameters.jsCode)({ first: /** Supplies an isolated event. */ () => ({ json: hostile }) });
   assert(!JSON.stringify(output).includes('secret-token'));

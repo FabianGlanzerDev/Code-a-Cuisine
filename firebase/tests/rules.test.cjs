@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const { fixture, reserveQuota, quotaRead } = require('../../n8n/tests/helpers.cjs');
 const rules = JSON.parse(fs.readFileSync('firebase/database.rules.json', 'utf8'));
-const workflow = JSON.parse(fs.readFileSync('n8n/generate-recipe.workflow.json', 'utf8'));
+const workflow = JSON.parse(fs.readFileSync('n8n/exports/generate-recipe-input-popup.json', 'utf8'));
 const storageCode = workflow.nodes.find(/** Selects the real exported storage preparation. @param node Workflow node. */ (node) => node.name === 'Prepare Recipe Storage').parameters.jsCode;
 let namespace;
 let batch;

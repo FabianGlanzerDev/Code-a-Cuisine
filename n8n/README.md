@@ -32,8 +32,8 @@ npm run test:backend
 npm run n8n:check
 ```
 
-59 lokale Backendtests prüfen unter anderem die Originalantworten #114 und #136. #136 wird mit seiner eigenen Anfrage ohne Chickpeas akzeptiert. #114 bleibt wegen nicht erlaubter Brühe abgelehnt; weitere Zeitplanfehler werden mit isolierten Kopien geprüft. Rekonstruierte Tests sind separat benannt. Keine neue Modellanfrage für diese Tests.
+61 lokale Backendtests prüfen unter anderem die Originalantworten #114 und #136. #136 wird mit seiner eigenen Anfrage ohne Chickpeas akzeptiert. #114 bleibt wegen nicht erlaubter Brühe abgelehnt; weitere Zeitplanfehler werden mit isolierten Kopien geprüft. Rekonstruierte Tests sind separat benannt. Keine neue Modellanfrage für diese Tests.
 
-`lib/`, `prompts/recipes.txt` und der gemeinsame Zutatenkatalog sind die Validierungsquellen. `npm run n8n:build` erzeugt die allgemeinen Vorlagen `generate-recipe.workflow.json` und `quota-status.workflow.json`; `error-handler.workflow.json` ist ebenfalls eine allgemeine Vorlage. Für bestehende Eigentümer-Workflows die drei obigen konfigurierten Exporte verwenden. Nach Quelländerungen auch deren eingebetteten Code unter Erhalt der Eigentümer-Konfiguration aktualisieren und testen. `n8n:check` prüft lokale Vorlagen, nicht den veröffentlichten Serverstand.
+`lib/`, `prompts/recipes.txt` und der gemeinsame Zutatenkatalog samt Aliaszuordnung sind die Quellen. `npm run n8n:build` aktualisiert den generierten Code direkt in den beiden konfigurierten Generator-/Status-Exporten. IDs, Credentials, Einstellungen, Verbindungen und andere Node-Parameter bleiben erhalten. Es entstehen keine weiteren Importvorlagen. `n8n:check` erkennt lokale Code-Abweichungen; es kontrolliert nicht den Server. Der Error Logger bleibt der separat gepflegte dritte Export.
 
 Regeln und Emulator: [../firebase/README.md](../firebase/README.md). Lokale Tests bestätigen weder aktuelle Serverregeln noch einen erfolgreichen Live-Durchlauf mit Modell und Speicherung. Frontend-Upload und Hash-Routing: [../README.md](../README.md).

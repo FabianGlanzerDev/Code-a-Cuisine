@@ -1,7 +1,7 @@
 ﻿const { test } = require('node:test');
 const assert = require('node:assert/strict');
 const { fixture, validateRecipes } = require('./helpers.cjs');
-const workflow = require('../generate-recipe.workflow.json');
+const workflow = require('../exports/generate-recipe-input-popup.json');
 
 /** Reconstructs only the reported request; this is not an execution export. */
 function reportedRequest() {
