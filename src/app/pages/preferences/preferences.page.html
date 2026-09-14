@@ -17,12 +17,12 @@
       <div class="quota-status" role="status" aria-live="polite">
         @if (quotaError) { <p>{{ quotaError }}</p> }
         @else if (quota.status; as status) {
-          <p>Your IP: {{ status.ipRemaining }}/{{ status.ipLimit }} recipe slots. System: {{ status.systemRemaining }}/{{ status.systemLimit }}.</p>
-          @if (status.systemRemaining < 3) { <p>System limit reached. Reset: midnight UTC.</p> }
-          @else if (status.ipRemaining < 3) { <p>Your daily limit is reached. Reset: midnight UTC.</p> }
+          <p>Free recipe slots - Your IP: {{ status.ipRemaining }}/{{ status.ipLimit }} recipe slots. System: {{ status.systemRemaining }}/{{ status.systemLimit }}.</p>
+          @if (status.ipRemaining < 3) { <p>Your daily limit is reached. Reset: midnight UTC.</p> }
+          @else if (status.systemRemaining < 3) { <p>System limit reached. Reset: midnight UTC.</p> }
           @else { <p>Daily reset: midnight UTC.</p> }
         } @else { <p>Checking available recipe slots…</p> }
-        @if (quotaError && !quotaChecking) { <button type="button" (click)="refreshQuota()">Check recipe slots again</button> }
+        @if (!quotaChecking) { <button type="button" (click)="refreshQuota()">Check recipe slots again</button> }
         <p>One generation uses 3 slots. Failed model attempts can use slots too.</p>
       </div>
 

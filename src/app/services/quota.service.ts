@@ -29,7 +29,7 @@ export class QuotaService {
     if (!this.pending) this.invalidate();
     return this.pending ??= this.http.get<QuotaStatus>(environment.quotaStatusUrl).pipe(
       timeout(15000),
-      tap(/** Caches the returned status. @param status Quota snapshot. */ status => this.set(status)),
+      tap(/** Caches the returned status. @param status Quota snapshot. */ status => { if (!status) throw new Error('Missing quota status'); this.set(status); }),
       finalize(/** Releases the shared request. */ () => this.pending = undefined),
       shareReplay({ bufferSize: 1, refCount: false }),
     );
