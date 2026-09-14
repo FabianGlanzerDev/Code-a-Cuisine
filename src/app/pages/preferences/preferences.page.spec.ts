@@ -251,3 +251,44 @@ function rejectsConfigurationPopup(): void {
   expect(page.showQuantityPopup).toBeFalse();
   expect(page.errorMessage).toBe('Contact the site operator.');
 }
+
+
+
+/** Checks every input blocker against the same decision used by the button. */
+function checksInputTransitions(): void {
+  expect(page.generationDisabled).toBeFalse();
+  const original = structuredClone(page.generator.requirements);
+  page.generator.requirements.ingredients = [];
+  expect(page.generationBlockedReason).toContain('Add ingredients');
+  page.generator.requirements = structuredClone(original);
+  page.generator.requirements.ingredients[0].isEditMode = true;
+  expect(page.generationBlockedReason).toContain('Finish editing');
+  page.generator.requirements = structuredClone(original); page.generator.requirements.cuisine = '';
+  expect(page.generationBlockedReason).toContain('Choose a cooking time');
+  page.generator.requirements = original;
+  expect(page.generationDisabled).toBeFalse();
+}
+
+
+
+/** Verifies a timeout, a retry and a delayed success cannot leave stale loading flags. */
+function checksQuotaTransitions(): void {
+  page.refreshQuota(); expect(page.generationBlockedReason).toContain('Checking');
+  const pending = http.expectOne(/** Finds the quota request. @param request HTTP request. */ request => request.method === 'GET');
+  tick(15000); expect(pending.cancelled).toBeTrue(); expect(page.quotaChecking).toBeFalse();
+  expect(page.generationBlockedReason).toContain('Availability is unknown');
+  page.refreshQuota(); expect(page.generationDisabled).toBeTrue(); tick(1000);
+  http.expectOne(/** Finds the retry. @param request HTTP request. */ request => request.method === 'GET')
+    .flush({ ipLimit: 3, ipUsed: 0, ipRemaining: 3, systemLimit: 12, systemUsed: 0, systemRemaining: 12 });
+  expect(page.quotaChecking).toBeFalse(); expect(page.generationDisabled).toBeFalse();
+  http.expectNone(/** No model request during availability recovery. @param request HTTP request. */ request => request.method === 'POST');
+}
+
+
+
+describe('Generation eligibility transitions', /** Guards the visible blocker and request lifecycle. */ () => {
+  beforeEach(configurePreferences);
+  afterEach(/** Rejects leftover requests. */ () => http.verify());
+  it('distinguishes missing ingredients, unfinished edits and missing preferences', checksInputTransitions);
+  it('recovers from quota timeout without generating', fakeAsync(checksQuotaTransitions));
+});

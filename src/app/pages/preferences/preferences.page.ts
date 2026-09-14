@@ -1,4 +1,5 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { validEntry } from '../../services/recipe-requirements';
 import { TitleCasePipe } from '@angular/common';
 import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
@@ -135,7 +136,8 @@ export class PreferencesPage implements OnInit {
     if (this.quotaError || !this.quota.status) return 'Availability is unknown. Please check recipe slots again.';
     if (this.store.pendingRecipes.length) return 'Confirm saving the previous recipes before generating again.';
     if (!this.generator.requirements.ingredients.length) return 'Add ingredients before generating a recipe.';
-    if (!this.generator.canGenerate()) return 'Finish editing ingredients and choose all preferences with valid portions and cooks.';
+    if (this.generator.requirements.ingredients.some(/** Rejects invalid quantities or unfinished edits. @param entry Ingredient. */ entry => !validEntry(entry) || entry.isEditMode)) return 'Finish editing your ingredients and enter valid positive quantities.';
+    if (!this.generator.canGenerate()) return 'Choose a cooking time, cuisine and diet, with 1-12 portions and 1-3 cooks.';
     if (this.quota.status.ipRemaining < 3) return 'Your daily recipe limit is reached. Three free IP slots are required.';
     if (this.quota.status.systemRemaining < 3) return 'The daily system limit is reached. Three free system slots are required.';
     return '';

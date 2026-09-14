@@ -115,7 +115,7 @@
       <button class="button button--primary" type="button" [disabled]="loading" (click)="checkStorage()">Check saved recipes</button>
       }
 
-      <p id="generation-blocked" role="status">{{ generationBlockedReason }}
+      <p id="generation-blocked" role="status">{{ generationBlockedReason || 'Ready to generate three recipes.' }}
         @if (!generator.requirements.ingredients.length) { <a routerLink="/generate-recipe">Go to ingredients →</a> }
       </p>
       <button [attr.aria-describedby]="generationBlockedReason ? 'generation-blocked' : null" class="button button--primary generate-button" #generateTrigger type="button" [disabled]="generationDisabled"

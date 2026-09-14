@@ -2,7 +2,7 @@ import { RecipeRequirements, IngredientEntry } from '../models/recipe.model';
 import { COOKING_TIMES, CUISINES, DIET_PREFERENCES } from '../data/preferences.data';
 
 /** Checks stored quantities without inventing portion-size rules. @param entry Untrusted ingredient. */
-function validEntry(entry: IngredientEntry): boolean {
+export function validEntry(entry: IngredientEntry): boolean {
   if (!entry || typeof entry.ingredient !== 'string' || !entry.ingredient.trim() || typeof entry.servingSize !== 'string') return false;
   const amount = entry.servingSize.match(/^(\d+(?:\.\d+)?)(g|ml)?$/);
   return !!amount && Number(amount[1]) > 0 && Number(amount[1]) <= 10000 && typeof entry.isEditMode === 'boolean';

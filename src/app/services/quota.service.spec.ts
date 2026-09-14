@@ -18,6 +18,8 @@ describe('Quota request reuse', /** Tests request cost and cache expiry. */ () =
   });
 });
 
+
+
 describe('Invalid quota response recovery', /** Keeps absent responses distinguishable from free slots. */ () => {
   it('rejects a null response and permits a new read', /** An HTTP 200 null must expose the retry path. */ () => {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting()] });
