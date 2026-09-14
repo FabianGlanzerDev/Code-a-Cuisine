@@ -15,7 +15,7 @@ function nutrient(value, unit) {
 
 
 /**
- * Checks macro energy shares and returns the numeric per-portion nutrition.
+ * Validates source amounts and energy; ignores model-supplied percentage fields.
  * @param snapshot Nutrition snapshot.
  */
 function validateSnapshot(snapshot) {
@@ -25,10 +25,6 @@ function validateSnapshot(snapshot) {
   const energy = values.map(/** Maps the current item to its output value. @param value Current callback input. @param index Current callback input. */ (value, index) => value * (index === 1 ? 9 : 4));
   const totalEnergy = energy.reduce(/** Combines the accumulated value with the current item. @param sum Current callback input. @param value Current callback input. */ (sum, value) => sum + value, 0);
   if (calories <= 0 || totalEnergy <= 0 || Math.abs(calories - totalEnergy) > Math.max(10, calories * 0.1)) throw new Error('Nutrition energy is inconsistent.');
-  ['proteins', 'fats', 'carbs'].forEach(/** Processes the current item in the enclosing operation. @param key Current callback input. @param index Current callback input. */ (key, index) => {
-    const percent = nutrient(snapshot[key + 'Percent'], '%');
-    if (percent > 100 || Math.abs(percent - energy[index] / totalEnergy * 100) > 2) throw new Error('Macro percentages are inconsistent.');
-  });
   return [calories, ...values];
 }
 
@@ -46,9 +42,30 @@ function validateNutrition(recipe, request) {
     const expected = value * request.portionsAmount;
     if (Math.abs(total[index] - expected) > Math.max(1, expected * 0.02)) throw new Error('Total nutrition does not match portions.');
   });
-  if (request.dietPreferences === 'keto' && nutrient(recipe.nutritionalInformation.perPortion.carbsPercent, '%') > 10) {
+  if (request.dietPreferences === 'keto' && macroShares(portion)[2] > 10) {
     throw new Error('Keto recipes must have at most 10% carbohydrate energy.');
   }
+  storeMacroShares(recipe.nutritionalInformation.perPortion, portion);
+  storeMacroShares(recipe.nutritionalInformation.total, total);
+}
+
+
+
+/** Computes unrounded energy shares from already validated numeric amounts. @param values Calories followed by protein, fat and carbohydrate grams. */
+function macroShares(values) {
+  const energy = values.slice(1).map(/** Converts grams to energy. */ (value, index) => value * (index === 1 ? 9 : 4));
+  const sum = energy.reduce(/** Adds macro energy. */ (total, value) => total + value, 0);
+  return energy.map(/** Calculates the unrounded percentage. */ value => value / sum * 100);
+}
+
+
+
+/** Formats derived shares for the existing display contract only after validation. @param snapshot Validated output snapshot. @param values Validated numeric amounts. */
+function storeMacroShares(snapshot, values) {
+  const shares = macroShares(values);
+  ['proteins', 'fats', 'carbs'].forEach(/** Stores display rounding without changing grams or calories. */ (key, index) => {
+    snapshot[key + 'Percent'] = shares[index].toFixed(2) + '%';
+  });
 }
 
 

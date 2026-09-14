@@ -1,3 +1,5 @@
+const INGREDIENT_CATALOG = require('../../src/app/data/ingredients.json');
+
 /**
  * Parses a bounded positive amount in the units accepted by the ingredient form.
  * @param value Value to validate or store.

@@ -1,0 +1,31 @@
+{
+  "request": {
+    "ingredients": [
+      {
+        "ingredient": "Carrot",
+        "servingSize": "500g"
+      },
+      {
+        "ingredient": "Potato",
+        "servingSize": "600g"
+      },
+      {
+        "ingredient": "Onion",
+        "servingSize": "200g"
+      },
+      {
+        "ingredient": "Chickpeas",
+        "servingSize": "400g"
+      }
+    ],
+    "portionsAmount": 2,
+    "cooksAmount": 2,
+    "cuisine": "german",
+    "cookingTime": "medium",
+    "dietPreferences": "vegan"
+  },
+  "ipKey": "REDACTED",
+  "dayKey": "2026-09-10",
+  "valid": true,
+  "errors": []
+}

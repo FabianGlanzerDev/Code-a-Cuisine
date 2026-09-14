@@ -1,0 +1,420 @@
+[
+  {
+    "title": "Traditional German Carrot and Potato Stew",
+    "cookingTime": "35 min",
+    "portionsAmount": 2,
+    "nutritionalInformation": {
+      "perPortion": {
+        "calories": "393 kcal",
+        "proteins": "7.6g",
+        "proteinsPercent": "8%",
+        "fats": "9.6g",
+        "fatsPercent": "22%",
+        "carbs": "68.5g",
+        "carbsPercent": "70%"
+      },
+      "total": {
+        "calories": "786 kcal",
+        "proteins": "15.2g",
+        "proteinsPercent": "8%",
+        "fats": "19.2g",
+        "fatsPercent": "22%",
+        "carbs": "137g",
+        "carbsPercent": "70%"
+      }
+    },
+    "preferences": {
+      "cookingTime": "medium",
+      "cuisine": "german",
+      "dietPreferences": "vegan"
+    },
+    "cooksAmount": 2,
+    "ingredients": {
+      "yourIngredients": [
+        {
+          "ingredient": "Carrot",
+          "servingSize": "400g",
+          "perPortionServingSize": "200g"
+        },
+        {
+          "ingredient": "Potato",
+          "servingSize": "500g",
+          "perPortionServingSize": "250g"
+        },
+        {
+          "ingredient": "Onion",
+          "servingSize": "150g",
+          "perPortionServingSize": "75g"
+        }
+      ],
+      "extraIngredients": [
+        {
+          "ingredient": "water",
+          "servingSize": "600ml",
+          "perPortionServingSize": "300ml"
+        },
+        {
+          "ingredient": "oil",
+          "servingSize": "20g",
+          "perPortionServingSize": "10g"
+        },
+        {
+          "ingredient": "salt",
+          "servingSize": "4g",
+          "perPortionServingSize": "2g"
+        }
+      ]
+    },
+    "directions": [
+      {
+        "order": 1,
+        "title": "Prep Onions and Carrots",
+        "description": "Dice the onions finely and slice carrots into thin rounds.",
+        "cook": 1,
+        "parallel": true,
+        "timingNote": "Cook 2 prepares potatoes simultaneously.",
+        "startMinute": 0,
+        "durationMinutes": 8,
+        "dependsOn": []
+      },
+      {
+        "order": 2,
+        "title": "Prep Potatoes",
+        "description": "Peel the potatoes and cut them into bite-sized cubes.",
+        "cook": 2,
+        "parallel": true,
+        "timingNote": "Cook 1 prepares onions and carrots simultaneously.",
+        "startMinute": 0,
+        "durationMinutes": 8,
+        "dependsOn": []
+      },
+      {
+        "order": 3,
+        "title": "Sauté Vegetables",
+        "description": "Heat oil in a large stew pot over medium heat and sauté the onions and carrots for 7 minutes.",
+        "cook": 1,
+        "parallel": false,
+        "timingNote": "",
+        "startMinute": 8,
+        "durationMinutes": 7,
+        "dependsOn": [
+          1
+        ]
+      },
+      {
+        "order": 4,
+        "title": "Combine and Bring to Boil",
+        "description": "Add cubed potatoes, water, and salt into the pot. Bring the mixture to a boil.",
+        "cook": 2,
+        "parallel": false,
+        "timingNote": "",
+        "startMinute": 15,
+        "durationMinutes": 5,
+        "dependsOn": [
+          2,
+          3
+        ]
+      },
+      {
+        "order": 5,
+        "title": "Simmer Stew",
+        "description": "Cover pot with a lid, reduce heat to low, and simmer until all vegetables are tender.",
+        "cook": 1,
+        "parallel": false,
+        "timingNote": "",
+        "startMinute": 20,
+        "durationMinutes": 15,
+        "dependsOn": [
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "title": "Rustic German Potato and Carrot Skillet",
+    "cookingTime": "30 min",
+    "portionsAmount": 2,
+    "nutritionalInformation": {
+      "perPortion": {
+        "calories": "324 kcal",
+        "proteins": "5.9g",
+        "proteinsPercent": "7%",
+        "fats": "10.55g",
+        "fatsPercent": "28%",
+        "carbs": "52.9g",
+        "carbsPercent": "65%"
+      },
+      "total": {
+        "calories": "648 kcal",
+        "proteins": "11.8g",
+        "proteinsPercent": "7%",
+        "fats": "21.1g",
+        "fatsPercent": "28%",
+        "carbs": "105.8g",
+        "carbsPercent": "65%"
+      }
+    },
+    "preferences": {
+      "cookingTime": "medium",
+      "cuisine": "german",
+      "dietPreferences": "vegan"
+    },
+    "cooksAmount": 2,
+    "ingredients": {
+      "yourIngredients": [
+        {
+          "ingredient": "Carrot",
+          "servingSize": "300g",
+          "perPortionServingSize": "150g"
+        },
+        {
+          "ingredient": "Potato",
+          "servingSize": "400g",
+          "perPortionServingSize": "200g"
+        },
+        {
+          "ingredient": "Onion",
+          "servingSize": "100g",
+          "perPortionServingSize": "50g"
+        }
+      ],
+      "extraIngredients": [
+        {
+          "ingredient": "oil",
+          "servingSize": "20g",
+          "perPortionServingSize": "10g"
+        },
+        {
+          "ingredient": "salt",
+          "servingSize": "4g",
+          "perPortionServingSize": "2g"
+        },
+        {
+          "ingredient": "black pepper",
+          "servingSize": "2g",
+          "perPortionServingSize": "1g"
+        }
+      ]
+    },
+    "directions": [
+      {
+        "order": 1,
+        "title": "Dice Potatoes",
+        "description": "Peel potatoes and cut them into small, uniform 1 cm cubes.",
+        "cook": 1,
+        "parallel": true,
+        "timingNote": "Cook 2 cuts carrots and onions.",
+        "startMinute": 0,
+        "durationMinutes": 8,
+        "dependsOn": []
+      },
+      {
+        "order": 2,
+        "title": "Slice Carrots and Onions",
+        "description": "Slice carrots into half-moons and finely chop the onion.",
+        "cook": 2,
+        "parallel": true,
+        "timingNote": "Cook 1 cuts potatoes.",
+        "startMinute": 0,
+        "durationMinutes": 8,
+        "dependsOn": []
+      },
+      {
+        "order": 3,
+        "title": "Pre-fry Potatoes",
+        "description": "Heat oil in a large skillet and fry potato cubes on medium-high heat until lightly golden.",
+        "cook": 1,
+        "parallel": true,
+        "timingNote": "Cook 2 prepares seasoning mix.",
+        "startMinute": 8,
+        "durationMinutes": 10,
+        "dependsOn": [
+          1
+        ]
+      },
+      {
+        "order": 4,
+        "title": "Measure Seasonings",
+        "description": "Measure salt and black pepper together in a small bowl.",
+        "cook": 2,
+        "parallel": true,
+        "timingNote": "Cook 1 fries potatoes.",
+        "startMinute": 8,
+        "durationMinutes": 2,
+        "dependsOn": []
+      },
+      {
+        "order": 5,
+        "title": "Add Veggies and Spices",
+        "description": "Add sliced carrots, onions, salt, and black pepper into the skillet with potatoes.",
+        "cook": 2,
+        "parallel": false,
+        "timingNote": "",
+        "startMinute": 18,
+        "durationMinutes": 2,
+        "dependsOn": [
+          2,
+          3,
+          4
+        ]
+      },
+      {
+        "order": 6,
+        "title": "Pan-Fry to Perfection",
+        "description": "Continue cooking over medium heat, stirring regularly, until vegetables are crisp and tender.",
+        "cook": 1,
+        "parallel": false,
+        "timingNote": "",
+        "startMinute": 20,
+        "durationMinutes": 10,
+        "dependsOn": [
+          5
+        ]
+      }
+    ]
+  },
+  {
+    "title": "German Potato-Carrot Soup with Onions",
+    "cookingTime": "40 min",
+    "portionsAmount": 2,
+    "nutritionalInformation": {
+      "perPortion": {
+        "calories": "379 kcal",
+        "proteins": "8.35g",
+        "proteinsPercent": "9%",
+        "fats": "5.85g",
+        "fatsPercent": "11%",
+        "carbs": "75.55g",
+        "carbsPercent": "80%"
+      },
+      "total": {
+        "calories": "758 kcal",
+        "proteins": "16.7g",
+        "proteinsPercent": "9%",
+        "fats": "11.7g",
+        "fatsPercent": "11%",
+        "carbs": "151.1g",
+        "carbsPercent": "80%"
+      }
+    },
+    "preferences": {
+      "cookingTime": "medium",
+      "cuisine": "german",
+      "dietPreferences": "vegan"
+    },
+    "cooksAmount": 2,
+    "ingredients": {
+      "yourIngredients": [
+        {
+          "ingredient": "Carrot",
+          "servingSize": "500g",
+          "perPortionServingSize": "250g"
+        },
+        {
+          "ingredient": "Potato",
+          "servingSize": "500g",
+          "perPortionServingSize": "250g"
+        },
+        {
+          "ingredient": "Onion",
+          "servingSize": "200g",
+          "perPortionServingSize": "100g"
+        }
+      ],
+      "extraIngredients": [
+        {
+          "ingredient": "water",
+          "servingSize": "800ml",
+          "perPortionServingSize": "400ml"
+        },
+        {
+          "ingredient": "oil",
+          "servingSize": "10g",
+          "perPortionServingSize": "5g"
+        },
+        {
+          "ingredient": "salt",
+          "servingSize": "4g",
+          "perPortionServingSize": "2g"
+        }
+      ]
+    },
+    "directions": [
+      {
+        "order": 1,
+        "title": "Chop Onions and Potatoes",
+        "description": "Finely dice onions and peel potatoes, chopping them into medium chunks.",
+        "cook": 1,
+        "parallel": true,
+        "timingNote": "Cook 2 chops carrots simultaneously.",
+        "startMinute": 0,
+        "durationMinutes": 10,
+        "dependsOn": []
+      },
+      {
+        "order": 2,
+        "title": "Chop Carrots",
+        "description": "Peel carrots and slice them into thin rounds.",
+        "cook": 2,
+        "parallel": true,
+        "timingNote": "Cook 1 chops onions and potatoes.",
+        "startMinute": 0,
+        "durationMinutes": 8,
+        "dependsOn": []
+      },
+      {
+        "order": 3,
+        "title": "Sweat Onions",
+        "description": "Heat oil in a soup pot and sweat onions until soft and translucent.",
+        "cook": 2,
+        "parallel": false,
+        "timingNote": "",
+        "startMinute": 10,
+        "durationMinutes": 5,
+        "dependsOn": [
+          1
+        ]
+      },
+      {
+        "order": 4,
+        "title": "Assemble Soup Base",
+        "description": "Add potatoes, carrots, water, and salt into the pot. Bring to a rolling boil.",
+        "cook": 1,
+        "parallel": false,
+        "timingNote": "",
+        "startMinute": 15,
+        "durationMinutes": 5,
+        "dependsOn": [
+          2,
+          3
+        ]
+      },
+      {
+        "order": 5,
+        "title": "Simmer Soup",
+        "description": "Cover and let the soup simmer gently until potatoes and carrots are completely soft.",
+        "cook": 2,
+        "parallel": false,
+        "timingNote": "",
+        "startMinute": 20,
+        "durationMinutes": 15,
+        "dependsOn": [
+          4
+        ]
+      },
+      {
+        "order": 6,
+        "title": "Mash and Serve",
+        "description": "Coarsely mash the soup with a potato masher to create a chunky German-style texture.",
+        "cook": 1,
+        "parallel": false,
+        "timingNote": "",
+        "startMinute": 35,
+        "durationMinutes": 5,
+        "dependsOn": [
+          5
+        ]
+      }
+    ]
+  }
+]

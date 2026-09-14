@@ -1,6 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { library, node, branch, response, quotaHttp, connect } = require('./workflow-tools.cjs');
+const { PANTRY_BASICS } = require('./lib/recipes.cjs');
+const renamedNodes = require('./node-name-mapping.json');
 const checkOnly = process.argv.includes('--check');
 const configCode = "return [{ json: { trustedIpHeader: '', modelName: 'models/gemini-3.6-flash', quotaUrl: 'https://code-a-cuisine-edd75-default-rtdb.europe-west1.firebasedatabase.app/privateQuota/v2/state.json', recipesUrl: 'https://code-a-cuisine-edd75-default-rtdb.europe-west1.firebasedatabase.app/recipes.json' } }];";
 const failureBody = "={{ JSON.stringify({ detail: 'The backend could not finish this request. Recipe slots may remain reserved for today to prevent repeated charges.', quota: null }) }}";
@@ -17,9 +19,22 @@ function commonWorkflow(statusOnly) {
   connect(workflow, 'Recipe Request', 'Backend Configuration');
   connect(workflow, 'Backend Configuration', 'Validate Request');
   connect(workflow, 'Validate Request', 'Request Valid?');
-  connect(workflow, 'Request Valid?', 'Read Atomic Quota', 'Return Validation Error');
-  connect(workflow, 'Read Atomic Quota', statusOnly ? 'Build Quota Status' : 'Prepare Reservation', 'Return Backend Error');
+  connect(workflow, 'Request Valid?', 'Read Daily Recipe Slots', 'Return Validation Error');
+  if (!statusOnly) addQuantityGate(workflow);
+  connect(workflow, 'Read Daily Recipe Slots', statusOnly ? 'Calculate Remaining Recipe Slots' : 'Prepare Three-Slot Reservation', 'Return Backend Error');
   return workflow;
+}
+
+
+
+/** Adds a dormant, backend-only quantity branch before any quota read or reservation. @param workflow Workflow being built. */
+function addQuantityGate(workflow) {
+  workflow.nodes.push({ ...node('Assess Ingredient Quantities', 'code', { jsCode: library(['quantity']) + "return [{ json: quantityGate($input.first().json) }];" }, [700, -320], 'No approved portion policy configured: not_assessed. Never accepts policy decisions from request or model.'), onError: 'continueErrorOutput' },
+    branch('Quantity Rejected?', '={{ $json.quantityRejected }}', [900, -320]),
+    response('Return Quantity Error', "={{ JSON.stringify({ code: 'INSUFFICIENT_INGREDIENT_QUANTITIES', portionsAmount: $json.request.portionsAmount, detail: 'Ingredient quantities are insufficient for the selected servings.', quota: null }) }}", 422, [1100, -480]));
+  connect(workflow, 'Request Valid?', 'Assess Ingredient Quantities', 'Return Validation Error');
+  connect(workflow, 'Assess Ingredient Quantities', 'Quantity Rejected?', 'Return Backend Error');
+  connect(workflow, 'Quantity Rejected?', 'Return Quantity Error', 'Read Daily Recipe Slots');
 }
 
 
@@ -36,8 +51,8 @@ function addEntryNodes(workflow, statusOnly) {
     node('Backend Configuration', 'code', { jsCode: configCode }, [220, 0], 'Set trustedIpHeader only after proving the ingress overwrites that header. Empty means fail closed.'),
     node('Validate Request', 'code', { jsCode: validation }, [440, 0], 'Checks positive quantities, choices and a canonical IP before any AI cost.'),
     branch('Request Valid?', '={{ $json.valid }}', [660, 0]),
-    response('Return Validation Error', "={{ JSON.stringify({ detail: $json.errors.join(' '), quota: null }) }}", 400, [880, 240]),
-    quotaHttp('Read Atomic Quota', 'GET', [880, 0]));
+    response('Return Validation Error', "={{ JSON.stringify({ code: $json.code, detail: $json.errors.join(' '), quota: null }) }}", 400, [880, 240]),
+    quotaHttp('Read Daily Recipe Slots', 'GET', [880, 0]));
 }
 
 
@@ -61,17 +76,17 @@ function addErrorNodes(workflow) {
  */
 function addReservation(workflow) {
   const code = library(['quota']) + "const context = $('Validate Request').first().json;\nconst result = $input.first().json;\nconst state = quotaRead(result);\nreturn [{ json: { ...context, ...reserveQuota(state, context), etag: result.headers.etag } }];";
-  workflow.nodes.push({ ...node('Prepare Reservation', 'code', { jsCode: code }, [1100, 0], 'Reserves 3 recipe slots per request: IP 3/day, system 12/day; rate window 10 seconds.'), onError: 'continueErrorOutput' },
-    branch('Quota Available?', '={{ $json.allowed }}', [1320, 0]), quotaHttp('Commit Reservation', 'PUT', [1540, 0]),
-    branch('Reservation Committed?', '={{ $json.statusCode === 200 }}', [1760, 0]),
-    branch('Reservation Conflict?', '={{ $json.statusCode === 412 }}', [1760, 240]),
+  workflow.nodes.push({ ...node('Prepare Three-Slot Reservation', 'code', { jsCode: code }, [1100, 0], 'Reserves 3 recipe slots per request: IP 3/day, system 12/day; rate window 10 seconds.'), onError: 'continueErrorOutput' },
+    branch('Enough Daily Recipe Slots?', '={{ $json.allowed }}', [1320, 0]), quotaHttp('Reserve Three Recipe Slots', 'PUT', [1540, 0]),
+    branch('Recipe Slots Reserved?', '={{ $json.statusCode === 200 }}', [1760, 0]),
+    branch('Reservation Write Conflict?', '={{ $json.statusCode === 412 }}', [1760, 240]),
     response('Return Quota Error', '={{ JSON.stringify({ detail: $json.detail, quota: $json.quota }) }}', 429, [1540, 360]),
     response('Return Concurrent Request', '={{ JSON.stringify({ detail: "Another request changed the quota. Please wait 10 seconds and try again. No generation was started.", quota: null }) }}', 429, [1980, 360]));
-  connect(workflow, 'Prepare Reservation', 'Quota Available?', 'Return Backend Error');
-  connect(workflow, 'Quota Available?', 'Commit Reservation', 'Return Quota Error');
-  connect(workflow, 'Commit Reservation', 'Reservation Committed?', 'Return Backend Error');
-  connect(workflow, 'Reservation Committed?', 'Build Model Request', 'Reservation Conflict?');
-  connect(workflow, 'Reservation Conflict?', 'Return Concurrent Request', 'Return Backend Error');
+  connect(workflow, 'Prepare Three-Slot Reservation', 'Enough Daily Recipe Slots?', 'Return Backend Error');
+  connect(workflow, 'Enough Daily Recipe Slots?', 'Reserve Three Recipe Slots', 'Return Quota Error');
+  connect(workflow, 'Reserve Three Recipe Slots', 'Recipe Slots Reserved?', 'Return Backend Error');
+  connect(workflow, 'Recipe Slots Reserved?', 'Build Model Request', 'Reservation Write Conflict?');
+  connect(workflow, 'Reservation Write Conflict?', 'Return Concurrent Request', 'Return Backend Error');
 }
 
 
@@ -81,14 +96,16 @@ function addReservation(workflow) {
  * @param workflow Workflow definition.
  */
 function addGeneration(workflow) {
-  const prompt = fs.readFileSync(path.join(__dirname, 'prompts/recipes.txt'), 'utf8').slice(1).replace(/\{\{[^\n]+\}\}/, '');
+  const prompt = fs.readFileSync(path.join(__dirname, 'prompts/recipes.txt'), 'utf8').slice(1).replace(/\{\{[^\n]+\}\}/, '').replace('{{PANTRY_BASICS}}', PANTRY_BASICS.join(', '));
   const code = `return [{ json: { systemInstruction: { parts: [{ text: ${JSON.stringify(prompt)} }] }, contents: [{ role: 'user', parts: [{ text: JSON.stringify($('Validate Request').first().json.request) }] }], generationConfig: { candidateCount: 1, responseMimeType: 'application/json', maxOutputTokens: 8192 } } }];`;
   workflow.nodes.push(node('Build Model Request', 'code', { jsCode: code }, [1980, -240], 'Separates fixed instructions from user input and caps one model response.'),
     { ...node('Create Three Recipes', 'httpRequest', modelParameters(), [1980, 0],
       'Select the real Google Gemini(PaLM) API credential. One direct request; automatic retries are disabled.', 4.2), onError: 'continueErrorOutput', retryOnFail: false });
   addOutputValidation(workflow);
   connect(workflow, 'Build Model Request', 'Create Three Recipes');
-  connect(workflow, 'Create Three Recipes', 'Validate Recipe Output', 'Return Backend Error');
+  workflow.nodes.push(response('Return Model Error', "={{ JSON.stringify({ code: 'MODEL_UNAVAILABLE', detail: 'The model request failed. Reserved recipe slots remain used today to bound costs. No automatic retry was made.', quota: $('Prepare Three-Slot Reservation').first().json.quota }) }}", 502, [2200, 480]));
+  connect(workflow, 'Create Three Recipes', 'Validate Recipe Output', 'Return Model Error');
+  connect(workflow, 'Return Model Error', 'Log Technical Failure');
 }
 
 
@@ -110,11 +127,11 @@ function modelParameters() {
  */
 function addOutputValidation(workflow) {
   const code = library(['ingredients', 'nutrition', 'directions', 'recipes'])
-    + "const context = $('Prepare Reservation').first().json;\ntry {\n  const candidate = $input.first().json.candidates?.[0];\n  if (candidate?.finishReason !== 'STOP') throw new Error('Incomplete model response.');\n  const raw = candidate.content.parts.filter(/** Checks whether the current item matches the filter. @param part Current callback input. */ (part) => !part.thought).map(/** Maps the current item to its output value. @param part Current callback input. */ (part) => part.text || '').join('');\n  const recipes = validateRecipes(raw, context.request);\n  return [{ json: { recipes, quota: context.quota, valid: true } }];\n} catch {\n  return [{ json: { detail: 'Generated recipes failed validation. The three reserved recipe slots remain used today to prevent repeated charges.', quota: context.quota, valid: false } }];\n}";
+    + "const context = $('Prepare Three-Slot Reservation').first().json;\ntry {\n  const candidate = $input.first().json.candidates?.[0];\n  if (candidate?.finishReason !== 'STOP') throw new Error('Incomplete model response.');\n  const raw = candidate.content.parts.filter(/** Checks whether the current item matches the filter. @param part Current callback input. */ (part) => !part.thought).map(/** Maps the current item to its output value. @param part Current callback input. */ (part) => part.text || '').join('');\n  const recipes = validateRecipes(raw, context.request);\n  return [{ json: { recipes, quota: context.quota, valid: true } }];\n} catch (error) {\n  return [{ json: { code: 'MODEL_OUTPUT_INVALID', validationFailure: error instanceof SyntaxError ? 'INVALID_JSON' : 'SCHEMA_REJECTED', validationIssue: safeValidationIssue(error), detail: 'Generated recipes failed validation. The three reserved recipe slots remain used today to prevent repeated charges.', quota: context.quota, valid: false } }];\n}";
   workflow.nodes.push(node('Validate Recipe Output', 'code', { jsCode: code }, [2200, 0], 'Checks diet exclusions, ingredient scaling, nutrition and chronological dependencies.'),
     branch('Recipe Output Valid?', '={{ $json.valid }}', [2420, 0]),
     response('Return Recipes and Quota', "={{ JSON.stringify({ recipes: $('Prepare Recipe Storage').first().json.recipes, quota: $('Prepare Recipe Storage').first().json.quota, persisted: true }) }}", 200, [3300, 0]),
-    response('Return Recipe Validation Error', '={{ JSON.stringify({ detail: $json.detail, quota: $json.quota }) }}', 502, [2640, 240]));
+    response('Return Recipe Validation Error', '={{ JSON.stringify({ code: $json.code, detail: $json.detail, quota: $json.quota }) }}', 502, [2640, 240]));
   connect(workflow, 'Validate Recipe Output', 'Recipe Output Valid?');
   connect(workflow, 'Recipe Output Valid?', 'Prepare Recipe Storage', 'Return Recipe Validation Error');
   connect(workflow, 'Return Recipe Validation Error', 'Log Technical Failure');
@@ -146,9 +163,9 @@ function addPersistence(workflow) {
 function statusWorkflow() {
   const workflow = commonWorkflow(true);
   const code = library(['quota']) + "const context = $('Validate Request').first().json;\nreturn [{ json: quotaStatus(quotaRead($input.first().json), context) }];";
-  workflow.nodes.push({ ...node('Build Quota Status', 'code', { jsCode: code }, [1100, 0], 'Reports remaining recipe slots from the same state used by reservations.'), onError: 'continueErrorOutput' },
+  workflow.nodes.push({ ...node('Calculate Remaining Recipe Slots', 'code', { jsCode: code }, [1100, 0], 'Reports remaining recipe slots from the same state used by reservations.'), onError: 'continueErrorOutput' },
     response('Return Quota Status', '={{ $json }}', 200, [1320, 0]));
-  connect(workflow, 'Build Quota Status', 'Return Quota Status', 'Return Backend Error');
+  connect(workflow, 'Calculate Remaining Recipe Slots', 'Return Quota Status', 'Return Backend Error');
   return workflow;
 }
 
@@ -161,9 +178,31 @@ function statusWorkflow() {
  */
 function writeWorkflow(filename, workflow) {
   const target = path.join(__dirname, filename);
+  preserveDeployment(target, workflow);
   const content = JSON.stringify(workflow, null, 2) + '\n';
   if (checkOnly && fs.readFileSync(target, 'utf8') !== content) throw new Error('Stale workflow export: ' + filename);
   if (!checkOnly) fs.writeFileSync(target, content);
+}
+
+
+
+/** Preserves configured identity and credentials when regenerating an existing export.
+ * @param target Existing export path.
+ * @param workflow Generated workflow to update.
+ */
+function preserveDeployment(target, workflow) {
+  if (!fs.existsSync(target)) return;
+  const previous = JSON.parse(fs.readFileSync(target, 'utf8'));
+  for (const key of ['id', 'active', 'versionId']) if (key in previous) workflow[key] = previous[key];
+  if (previous.settings?.errorWorkflow && !previous.settings.errorWorkflow.startsWith('SET_')) workflow.settings.errorWorkflow = previous.settings.errorWorkflow;
+  for (const next of workflow.nodes) {
+    const old = previous.nodes.find(/** Matches a stable node name. @param node Existing node. */ node => node.name === next.name || renamedNodes[node.name] === next.name);
+    if (!old) continue;
+    next.id = old.id;
+    if (old.credentials) next.credentials = old.credentials;
+    if (old.webhookId) next.webhookId = old.webhookId;
+    if (next.name === 'Backend Configuration') next.parameters = old.parameters;
+  }
 }
 
 

@@ -1,0 +1,18 @@
+﻿{
+  "request": {
+    "ingredients": [
+      { "ingredient": "Carrot", "servingSize": "500g", "isEditMode": false },
+      { "ingredient": "Potato", "servingSize": "600g", "isEditMode": false },
+      { "ingredient": "Onion", "servingSize": "200g", "isEditMode": false }
+    ],
+    "portionsAmount": 2,
+    "cooksAmount": 2,
+    "cookingTime": "medium",
+    "cuisine": "german",
+    "dietPreferences": "vegan"
+  },
+  "ipKey": "REDACTED",
+  "dayKey": "2026-09-13",
+  "valid": true,
+  "errors": []
+}

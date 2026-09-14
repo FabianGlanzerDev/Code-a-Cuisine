@@ -1,0 +1,12 @@
+{
+  "Read Atomic Quota": "Read Daily Recipe Slots",
+  "Quota Available?": "Enough Daily Recipe Slots?",
+  "Prepare Reservation": "Prepare Three-Slot Reservation",
+  "Commit Reservation": "Reserve Three Recipe Slots",
+  "Reservation Committed?": "Recipe Slots Reserved?",
+  "Reservation Conflict?": "Reservation Write Conflict?",
+  "Build Quota Status": "Calculate Remaining Recipe Slots",
+  "Build Error Log": "Prepare Sanitized Error Record",
+  "Store Error Log": "Save Sanitized Error Record",
+  "Send Error Email": "Notify Operator of Workflow Failure"
+}

@@ -22,6 +22,7 @@ function ingredientErrors(request) {
   const entries = request.ingredients;
   if (!Array.isArray(entries) || entries.length < 1 || entries.length > 30) return ['Please provide between 1 and 30 ingredients.'];
   if (entries.some(/** Checks whether this item meets the condition. @param entry Current callback input. */ (entry) => !validIngredient(entry))) return ['Every ingredient needs a valid name and a positive amount (g, ml or pieces).'];
+  if (entries.some(/** Checks catalog membership. @param entry Submitted food. */ entry => !INGREDIENT_CATALOG.some(/** Matches a known name. @param food Catalog entry. */ food => food.toLowerCase() === foodName(entry)))) return ['Unknown food in the English/German ingredient list. Check spelling, use a suggestion or ask the site owner to add this ingredient.'];
   if (new Set(entries.map(foodName)).size !== entries.length) return ['Please combine duplicate ingredients.'];
   const compatible = entries.filter(/** Checks whether the current item matches the filter. @param entry Current callback input. */ (entry) => !violatesDiet(entry, request.dietPreferences));
   return compatible.length < Math.ceil(entries.length * 0.7)
@@ -40,12 +41,14 @@ function ingredientErrors(request) {
 function validateRequest(item, config, now = Date.now(), statusOnly = false) {
   const request = item.body && typeof item.body === 'object' ? item.body : {};
   const errors = statusOnly ? [] : requestErrors(request);
+  const inputErrorCount = errors.length;
   const ip = clientIp(item.headers ?? {}, config.trustedIpHeader);
   if (!ip) errors.push('A verified client IP is unavailable. Please contact the site operator.');
   if (!statusOnly && !/^models\/gemini-[\w.-]+$/.test(config.modelName ?? '')) errors.push('The recipe model is not configured. Please contact the site operator.');
   const dayKey = new Date(now).toISOString().slice(0, 10);
   const ipKey = ip?.replaceAll('.', '_').replaceAll(':', '_') ?? '';
-  return { request, ipKey, dayKey, valid: errors.length === 0, errors };
+  const code = errors.length > inputErrorCount ? 'BACKEND_CONFIGURATION_ERROR' : inputErrorCount ? 'INVALID_RECIPE_INPUT' : null;
+  return { request, ipKey, dayKey, valid: errors.length === 0, errors, code };
 }
 
 

@@ -49,7 +49,7 @@ test('exported model request contains one bounded response and separates user da
 
 
 test('exported response validation accepts complete Gemini JSON and rejects truncation', /** Verifies: exported response validation accepts complete Gemini JSON and rejects truncation. */ () => {
-  const history = { 'Prepare Reservation': { request: request(), quota: { ipRemaining: 0 } } };
+  const history = { 'Prepare Three-Slot Reservation': { request: request(), quota: { ipRemaining: 0 } } };
   const candidate = { finishReason: 'STOP', content: { parts: [{ text: JSON.stringify(fixture()) }] } };
   assert.equal(runCode('Validate Recipe Output', { candidates: [candidate] }, history).valid, true);
   candidate.finishReason = 'MAX_TOKENS';
@@ -60,11 +60,11 @@ test('exported response validation accepts complete Gemini JSON and rejects trun
 
 test('conditional quota writes always require an ETag and handled failures reach the logger', /** Verifies: conditional quota writes always require an ETag and handled failures reach the logger. */ () => {
   const workflow = workflows[0];
-  const write = workflow.nodes.find(/** Checks whether the current item is the requested match. @param node Current callback input. */ (node) => node.name === 'Commit Reservation');
+  const write = workflow.nodes.find(/** Checks whether the current item is the requested match. @param node Current callback input. */ (node) => node.name === 'Reserve Three Recipe Slots');
   assert.equal(write.parameters.headerParameters.parameters[0].name, 'if-match');
   assert.equal(workflow.connections['Return Backend Error'].main[0][0].node, 'Log Technical Failure');
   assert.equal(workflow.connections['Return Recipe Validation Error'].main[0][0].node, 'Log Technical Failure');
-  assert.equal(workflows[2].nodes.find(/** Checks whether the current item is the requested match. @param node Current callback input. */ (node) => node.name === 'Send Error Email').disabled, true);
+  assert.equal(workflows[2].nodes.find(/** Checks whether the current item is the requested match. @param node Current callback input. */ (node) => node.name === 'Notify Operator of Workflow Failure').disabled, true);
 });
 
 

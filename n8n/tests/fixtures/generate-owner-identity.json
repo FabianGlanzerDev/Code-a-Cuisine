@@ -1,0 +1,175 @@
+{
+  "id": "nVrQ3KLEq6mJNb44",
+  "nodes": [
+    {
+      "id": "8075d348-9839-4fd1-be00-2786670fa258",
+      "name": "Recipe Request",
+      "type": "n8n-nodes-base.webhook",
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-recipe",
+        "responseMode": "responseNode",
+        "options": {}
+      }
+    },
+    {
+      "id": "47961b90-ebef-4be0-8aa4-28bc486aeef2",
+      "name": "Backend Configuration",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "id": "1451c57b-4e84-4f9f-bbaf-2bd8ac992327",
+      "name": "Validate Request",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "id": "c2f6cf85-4def-475c-8e86-51232b9b0834",
+      "name": "Request Valid?",
+      "type": "n8n-nodes-base.if"
+    },
+    {
+      "id": "39927790-dd16-4e8b-b9f2-3d65a344cf03",
+      "name": "Return Validation Error",
+      "type": "n8n-nodes-base.respondToWebhook"
+    },
+    {
+      "id": "f3c5c43c-89b1-44d4-84c1-631ad505abbc",
+      "name": "Read Atomic Quota",
+      "type": "n8n-nodes-base.httpRequest",
+      "credentials": {
+        "googleFirebaseRealtimeDatabaseOAuth2Api": {
+          "id": "26PtpQPZOyan1SZC",
+          "name": "Google Firebase Realtime Database account"
+        }
+      }
+    },
+    {
+      "id": "92be44ad-ba2c-4885-83c0-b60e9fbc02ac",
+      "name": "Return Backend Error",
+      "type": "n8n-nodes-base.respondToWebhook"
+    },
+    {
+      "id": "9a02de78-8d64-4ece-956d-47cb202a1a7f",
+      "name": "Log Technical Failure",
+      "type": "n8n-nodes-base.stopAndError"
+    },
+    {
+      "id": "3a0cca4f-dc1a-454f-9a37-5d88c6474f6c",
+      "name": "Prepare Reservation",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "id": "c6cd7ac2-a40c-4862-b3d8-60d69c0d9318",
+      "name": "Quota Available?",
+      "type": "n8n-nodes-base.if"
+    },
+    {
+      "id": "8412a00e-48bf-4c9b-acc4-9ef73ab65fc5",
+      "name": "Commit Reservation",
+      "type": "n8n-nodes-base.httpRequest",
+      "credentials": {
+        "googleFirebaseRealtimeDatabaseOAuth2Api": {
+          "id": "26PtpQPZOyan1SZC",
+          "name": "Google Firebase Realtime Database account"
+        }
+      }
+    },
+    {
+      "id": "681829e4-3d16-44ed-8a13-96ae1b97df0f",
+      "name": "Reservation Committed?",
+      "type": "n8n-nodes-base.if"
+    },
+    {
+      "id": "2341eba4-5205-45cf-ae53-ee75b6e8aa03",
+      "name": "Reservation Conflict?",
+      "type": "n8n-nodes-base.if"
+    },
+    {
+      "id": "385a4c8f-d9d0-4831-807d-7c0840c5cb70",
+      "name": "Return Quota Error",
+      "type": "n8n-nodes-base.respondToWebhook"
+    },
+    {
+      "id": "48854d8b-cbf8-422f-8b67-dc53a5679668",
+      "name": "Return Concurrent Request",
+      "type": "n8n-nodes-base.respondToWebhook"
+    },
+    {
+      "id": "69a83bbf-5631-4307-a6da-bed7d0097a05",
+      "name": "Build Model Request",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "id": "77a1b43c-f5c8-4162-a6a0-fef83f878389",
+      "name": "Create Three Recipes",
+      "type": "n8n-nodes-base.httpRequest",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6BQ19uVrgE9IE3xm",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "id": "484d49b8-b928-4c51-997d-f14d7cf3b93d",
+      "name": "Validate Recipe Output",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "id": "61b06a01-5725-4119-b26c-62b2b533379b",
+      "name": "Recipe Output Valid?",
+      "type": "n8n-nodes-base.if"
+    },
+    {
+      "id": "0cb3a3c6-b8aa-4aa0-8972-4d3b98d4a8bf",
+      "name": "Return Recipes and Quota",
+      "type": "n8n-nodes-base.respondToWebhook"
+    },
+    {
+      "id": "0f689cbf-07c4-489b-8b53-093f4bb90a79",
+      "name": "Return Recipe Validation Error",
+      "type": "n8n-nodes-base.respondToWebhook"
+    },
+    {
+      "id": "1fb2ecb1-a50b-481b-b351-fdf2b2fc8296",
+      "name": "Prepare Recipe Storage",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "id": "efd5ecae-eee9-4d36-8bfc-754591d876dc",
+      "name": "Store Recipes Atomically",
+      "type": "n8n-nodes-base.httpRequest",
+      "credentials": {
+        "googleFirebaseRealtimeDatabaseOAuth2Api": {
+          "id": "26PtpQPZOyan1SZC",
+          "name": "Google Firebase Realtime Database account"
+        }
+      }
+    },
+    {
+      "id": "fd1bbaf6-4a8b-48d2-ab88-5fb9b1823bc6",
+      "name": "Return Unsaved Recipes",
+      "type": "n8n-nodes-base.respondToWebhook"
+    },
+    {
+      "id": "dfb4ba5a-ac97-4896-8e92-e8a9029d0f61",
+      "name": "Return Model Error",
+      "type": "n8n-nodes-base.respondToWebhook"
+    },
+    {
+      "id": "assess-ingredient-quantities",
+      "name": "Assess Ingredient Quantities",
+      "type": "n8n-nodes-base.code"
+    },
+    {
+      "id": "quantity-rejected-",
+      "name": "Quantity Rejected?",
+      "type": "n8n-nodes-base.if"
+    },
+    {
+      "id": "return-quantity-error",
+      "name": "Return Quantity Error",
+      "type": "n8n-nodes-base.respondToWebhook"
+    }
+  ]
+}

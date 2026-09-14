@@ -41,7 +41,7 @@ function reserveQuota(state, context, now = Date.now()) {
   const lastRequest = quotaCount(state?.lastRequests?.[context.ipKey]);
   if (lastRequest && now - lastRequest < RATE_WINDOW_MS) return { allowed: false, quota, detail: 'Too many requests. Please wait 10 seconds.' };
   if (quota.ipRemaining < RECIPE_COST || quota.systemRemaining < RECIPE_COST) {
-    return { allowed: false, quota, detail: 'Daily recipe quota exceeded. Each request reserves 3 recipes. Please try again tomorrow (UTC).' };
+    return { allowed: false, quota, detail: quota.systemRemaining < RECIPE_COST ? 'Global daily recipe capacity is exhausted. Please try again after midnight UTC.' : 'Your IP daily recipe reservation is exhausted. Please try again after midnight UTC.' };
   }
   const nextState = incrementReservation(state, context, now);
   return { allowed: true, nextState, quota: quotaStatus(nextState, context) };

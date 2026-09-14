@@ -1,0 +1,306 @@
+/**
+ * Parses a bounded positive amount in the units accepted by the ingredient form.
+ * @param value Value to validate or store.
+ */
+function parseAmount(value) {
+  if (typeof value !== 'string' || value.length > 30) return null;
+  const match = value.trim().match(/^(\d+(?:[.,]\d+)?)\s*(g|ml|piece|pieces)?$/i);
+  if (!match) return null;
+  const amount = Number(match[1].replace(',', '.'));
+  const unit = (match[2] || '').toLowerCase().replace(/^pieces?$/, '');
+  return Number.isFinite(amount) && amount > 0 && amount <= 10000 ? { amount, unit } : null;
+}
+
+
+
+/**
+ * Returns whether an ingredient contains a valid name and positive quantity.
+ * @param entry Ingredient entry to validate.
+ */
+function validIngredient(entry) {
+  if (typeof entry?.ingredient !== 'string') return false;
+  const name = entry.ingredient.trim();
+  return name.length > 0 && name.length <= 80 && /[\p{L}]/u.test(name)
+    && /^[\p{L}\p{N} .,'’()\-/]+$/u.test(name) && !!parseAmount(entry.servingSize);
+}
+
+
+
+/**
+ * Normalizes a food name for exact ingredient coverage and duplicate checks.
+ * @param entry Ingredient entry to validate.
+ */
+function foodName(entry) {
+  return String(entry?.ingredient ?? '').trim().toLowerCase();
+}
+
+
+
+/**
+ * Rejects known animal ingredients for vegetarian and vegan requests.
+ * @param entry Ingredient entry to validate.
+ * @param diet Selected dietary preference.
+ */
+function violatesDiet(entry, diet) {
+  const name = foodName(entry);
+  const meat = /\b(chicken|beef|pork|bacon|ham|salami|pastrami|lamb|turkey|duck|fish|salmon|tuna|shrimp|prawn|anchov\w*|gelatin\w*|lard|meat|sausage|huhn|hähnchen|rind\w*|schwein\w*|speck|schinken|fisch|lachs|thunfisch|garnele\w*|wurst)\b/i;
+  const dairy = /\b(egg\w*|milk|cream|butter|cheese|yogu?rt|honey|whey|casein|ghee|parmesan|mozzarella|feta|ei|eier|milch|sahne|käse|honig|joghurt|quark)\b/i;
+  const plantDairy = /\b(soy|soja|oat|hafer|almond|mandel|coconut|kokos|peanut|erdnuss|cashew|vegan|plant)\w*\b/i;
+  if (!['vegetarian', 'vegan'].includes(diet)) return false;
+  if (meat.test(name)) return true;
+  return diet === 'vegan' && dairy.test(name) && !plantDairy.test(name);
+}
+
+
+
+/**
+ * Parses a nonnegative nutrition value with an exact unit.
+ * @param value Value to validate or store.
+ * @param unit Expected ingredient or nutrition unit.
+ */
+function nutrient(value, unit) {
+  if (typeof value !== 'string') throw new Error('Nutrition must include units.');
+  const match = value.trim().match(/^(\d+(?:[.,]\d+)?)\s*(kcal|g|%)$/);
+  if (!match || match[2] !== unit) throw new Error('Invalid nutrition amount or unit.');
+  const amount = Number(match[1].replace(',', '.'));
+  if (!Number.isFinite(amount) || amount > 100000) throw new Error('Invalid nutrition amount.');
+  return amount;
+}
+
+
+
+/**
+ * Checks macro energy shares and returns the numeric per-portion nutrition.
+ * @param snapshot Nutrition snapshot.
+ */
+function validateSnapshot(snapshot) {
+  if (!snapshot) throw new Error('Nutrition is missing.');
+  const calories = nutrient(snapshot.calories, 'kcal');
+  const values = ['proteins', 'fats', 'carbs'].map(/** Maps the current item to its output value. @param key Current callback input. */ (key) => nutrient(snapshot[key], 'g'));
+  const energy = values.map(/** Maps the current item to its output value. @param value Current callback input. @param index Current callback input. */ (value, index) => value * (index === 1 ? 9 : 4));
+  const totalEnergy = energy.reduce(/** Combines the accumulated value with the current item. @param sum Current callback input. @param value Current callback input. */ (sum, value) => sum + value, 0);
+  if (calories <= 0 || totalEnergy <= 0 || Math.abs(calories - totalEnergy) > Math.max(10, calories * 0.1)) throw new Error('Nutrition energy is inconsistent.');
+  ['proteins', 'fats', 'carbs'].forEach(/** Processes the current item in the enclosing operation. @param key Current callback input. @param index Current callback input. */ (key, index) => {
+    const percent = nutrient(snapshot[key + 'Percent'], '%');
+    if (percent > 100 || Math.abs(percent - energy[index] / totalEnergy * 100) > 2) throw new Error('Macro percentages are inconsistent.');
+  });
+  return [calories, ...values];
+}
+
+
+
+/**
+ * Verifies total nutrition scales with portions and enforces the documented keto limit.
+ * @param recipe Recipe to process.
+ * @param request Validated recipe requirements.
+ */
+function validateNutrition(recipe, request) {
+  const portion = validateSnapshot(recipe.nutritionalInformation?.perPortion);
+  const total = validateSnapshot(recipe.nutritionalInformation?.total);
+  portion.forEach(/** Processes the current item in the enclosing operation. @param value Current callback input. @param index Current callback input. */ (value, index) => {
+    const expected = value * request.portionsAmount;
+    if (Math.abs(total[index] - expected) > Math.max(1, expected * 0.02)) throw new Error('Total nutrition does not match portions.');
+  });
+  if (request.dietPreferences === 'keto' && nutrient(recipe.nutritionalInformation.perPortion.carbsPercent, '%') > 10) {
+    throw new Error('Keto recipes must have at most 10% carbohydrate energy.');
+  }
+}
+
+
+
+/**
+ * Validates one chronological instruction and its explicit dependencies.
+ * @param step Direction to validate.
+ * @param index Zero-based item position.
+ * @param steps Chronological recipe directions.
+ * @param cooks Number of cooks.
+ */
+function validateStep(step, index, steps, cooks) {
+  if (step?.order !== index + 1 || !Number.isInteger(step.cook) || step.cook < 1 || step.cook > cooks) throw new Error('Invalid step order or cook.');
+  if (typeof step.title !== 'string' || !step.title.trim() || typeof step.description !== 'string' || !step.description.trim()) throw new Error('Incomplete direction.');
+  if (!Number.isFinite(step.startMinute) || step.startMinute < 0 || !Number.isFinite(step.durationMinutes) || step.durationMinutes <= 0) throw new Error('Invalid step timing.');
+  if (index && step.startMinute < steps[index - 1].startMinute) throw new Error('Directions are not chronological.');
+  if (!Array.isArray(step.dependsOn) || typeof step.parallel !== 'boolean') throw new Error('Missing step dependencies or parallel marker.');
+  for (const dependency of step.dependsOn) {
+    if (!Number.isInteger(dependency) || dependency < 1 || dependency >= step.order) throw new Error('Invalid step dependency.');
+    const previous = steps[dependency - 1];
+    if (previous.startMinute + previous.durationMinutes > step.startMinute) throw new Error('Step starts before its dependency finishes.');
+  }
+}
+
+
+
+/**
+ * Returns whether two scheduled directions overlap in time.
+ * @param first First scheduled direction.
+ * @param second Second scheduled direction.
+ */
+function overlaps(first, second) {
+  return first.startMinute < second.startMinute + second.durationMinutes
+    && second.startMinute < first.startMinute + first.durationMinutes;
+}
+
+
+
+/**
+ * Checks cook availability and confirms parallel flags correspond to real parallel work.
+ * @param steps Chronological recipe directions.
+ * @param cooks Number of cooks.
+ */
+function validateParallel(steps, cooks) {
+  for (const step of steps) {
+    const concurrent = steps.filter(/** Checks whether the current item matches the filter. @param other Current callback input. */ (other) => other !== step && overlaps(step, other));
+    if (concurrent.some(/** Checks whether this item meets the condition. @param other Current callback input. */ (other) => other.cook === step.cook)) throw new Error('One cook has overlapping tasks.');
+    if (step.parallel !== (concurrent.length > 0)) throw new Error('Parallel marker does not match the schedule.');
+  }
+  const assigned = new Set(steps.map(/** Maps the current item to its output value. @param step Current callback input. */ (step) => step.cook));
+  if (assigned.size !== cooks || cooks > 1 && !steps.some(/** Checks whether this item meets the condition. @param step Current callback input. */ (step) => step.parallel)) throw new Error('Incomplete cook task allocation.');
+}
+
+
+
+/**
+ * Checks chronological order, task allocation and total cooking duration.
+ * @param recipe Recipe to process.
+ * @param cooks Number of cooks.
+ * @param minutes Maximum cooking duration.
+ */
+function validateDirections(recipe, cooks, minutes) {
+  const steps = recipe.directions;
+  if (!Array.isArray(steps) || steps.length < cooks || steps.length > 50) throw new Error('Invalid directions.');
+  steps.forEach(/** Processes the current item in the enclosing operation. @param step Current callback input. @param index Current callback input. */ (step, index) => validateStep(step, index, steps, cooks));
+  validateParallel(steps, cooks);
+  const finish = Math.max(...steps.map(/** Maps the current item to its output value. @param step Current callback input. */ (step) => step.startMinute + step.durationMinutes));
+  if (finish > minutes) throw new Error('Directions exceed the cooking time.');
+}
+
+
+
+/**
+ * Checks a recipe title without accepting empty, duplicate or placeholder headings.
+ * @param title Input used by this operation.
+ */
+function validTitle(title) {
+  return typeof title === 'string' && title.trim().length >= 5 && title.length <= 120
+    && title.trim().split(/\s+/).length >= 2
+    && !/\b(test\d*|recipe\s*xyz|lorem|placeholder|untitled)\b/i.test(title);
+}
+
+
+
+/**
+ * Parses an explicit duration in minutes and enforces the selected category.
+ * @param value Value to validate or store.
+ * @param category Selected cooking-time category.
+ */
+function cookingMinutes(value, category) {
+  const match = typeof value === 'string' && value.match(/^(\d+)\s*(min|minutes)$/i);
+  const minutes = match ? Number(match[1]) : NaN;
+  const valid = category === 'quick' ? minutes <= 20 : category === 'medium' ? minutes >= 20 && minutes <= 45 : minutes > 45;
+  if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 1440 || !valid) throw new Error('Cooking time is outside the selected range.');
+  return minutes;
+}
+
+
+
+/**
+ * Derives the final ingredient quantity from the supplied one-portion base.
+ * @param entry Ingredient entry to validate.
+ * @param portions Requested portion count.
+ * @param available Available input ingredient quantity.
+ */
+function scaleIngredient(entry, portions, available) {
+  if (!validIngredient(entry)) throw new Error('Invalid recipe ingredient quantity.');
+  const base = parseAmount(entry.perPortionServingSize);
+  const total = parseAmount(entry.servingSize);
+  if (!base || base.unit !== total.unit) throw new Error('Missing per-portion ingredient quantity.');
+  const scaled = Math.round(base.amount * portions * 1000) / 1000;
+  if (scaled <= 0 || scaled > 10000 || Math.abs(scaled - total.amount) > 0.001) throw new Error('Ingredient quantity does not scale with portions.');
+  if (available && (available.unit !== total.unit || scaled > available.amount + 0.001)) throw new Error('Insufficient ingredient quantities for selected servings.');
+  entry.servingSize = `${scaled}${base.unit}`;
+}
+
+
+
+/**
+ * Checks exact ingredient coverage, disjoint extras and positive scaled quantities.
+ * @param recipe Recipe to process.
+ * @param request Validated recipe requirements.
+ */
+function validateRecipeIngredients(recipe, request) {
+  const own = recipe.ingredients?.yourIngredients;
+  const extras = recipe.ingredients?.extraIngredients;
+  if (!Array.isArray(own) || !Array.isArray(extras) || extras.length > 3) throw new Error('Invalid ingredient lists.');
+  const all = [...own, ...extras];
+  if (new Set(all.map(foodName)).size !== all.length) throw new Error('Duplicate recipe ingredients.');
+  const supplied = new Map(request.ingredients.map(/** Maps the current item to its output value. @param entry Current callback input. */ (entry) => [foodName(entry), parseAmount(entry.servingSize)]));
+  if (own.length < Math.ceil(supplied.size * 0.7) || own.some(/** Checks whether this item meets the condition. @param entry Current callback input. */ (entry) => !supplied.has(foodName(entry)))) throw new Error('Ingredient coverage must be at least 70%.');
+  own.forEach(/** Processes the current item in the enclosing operation. @param entry Current callback input. */ (entry) => scaleIngredient(entry, request.portionsAmount, supplied.get(foodName(entry))));
+  validateExtras(extras, supplied, request.portionsAmount);
+  if (all.some(/** Checks whether this item meets the condition. @param entry Current callback input. */ (entry) => violatesDiet(entry, request.dietPreferences))) throw new Error('Ingredients violate the selected diet.');
+}
+
+
+
+/**
+ * Limits extra ingredients to common pantry basics and excludes supplied foods.
+ * @param extras Input used by this operation.
+ * @param supplied Input ingredient quantities indexed by name.
+ * @param portions Requested portion count.
+ */
+function validateExtras(extras, supplied, portions) {
+  const basics = /^(salt|pepper|black pepper|water|olive oil|oil|butter|flour|sugar|vinegar|garlic|onion|lemon|lemon juice|paprika|cumin|turmeric|curry powder|soy sauce|basil|oregano|parsley|salz|pfeffer|wasser|olivenöl|öl|mehl|zucker|essig|knoblauch|zwiebel|zitrone)$/i;
+  for (const entry of extras) {
+    if (!basics.test(foodName(entry)) || supplied.has(foodName(entry))) throw new Error('Extra ingredients must be missing pantry basics.');
+    scaleIngredient(entry, portions);
+  }
+}
+
+
+
+/**
+ * Validates the selected preferences and every structured part of one recipe.
+ * @param recipe Recipe to process.
+ * @param request Validated recipe requirements.
+ */
+function validateRecipe(recipe, request) {
+  if (recipe.portionsAmount !== request.portionsAmount || recipe.cooksAmount !== request.cooksAmount) throw new Error('Portions or cooks do not match.');
+  for (const key of ['cuisine', 'dietPreferences', 'cookingTime']) {
+    if (recipe.preferences?.[key] !== request[key]) throw new Error('Recipe preferences do not match.');
+  }
+  const minutes = cookingMinutes(recipe.cookingTime, request.cookingTime);
+  validateRecipeIngredients(recipe, request);
+  validateNutrition(recipe, request);
+  validateDirections(recipe, request.cooksAmount, minutes);
+}
+
+
+
+/**
+ * Validates all three AI suggestions before returning or persisting any result.
+ * @param raw Raw JSON recipe response.
+ * @param request Validated recipe requirements.
+ */
+function validateRecipes(raw, request) {
+  const recipes = JSON.parse(String(raw).replace(/^```(?:json)?\s*|\s*```$/gi, '').trim());
+  if (!Array.isArray(recipes) || recipes.length !== 3) throw new Error('Exactly three recipes are required.');
+  if (recipes.some(/** Checks whether this item meets the condition. @param recipe Current callback input. */ (recipe) => !validTitle(recipe?.title))) throw new Error('Invalid recipe title.');
+  if (new Set(recipes.map(/** Maps the current item to its output value. @param recipe Current callback input. */ (recipe) => recipe.title.trim().toLowerCase())).size !== 3) throw new Error('Recipe titles must be unique.');
+  recipes.forEach(/** Processes the current item in the enclosing operation. @param recipe Current callback input. */ (recipe) => validateRecipe(recipe, request));
+  const methods = recipes.map(/** Maps the current item to its output value. @param recipe Current callback input. */ (recipe) => JSON.stringify(recipe.directions.map(/** Maps the current item to its output value. @param step Current callback input. */ (step) => step.description.trim().toLowerCase())));
+  if (new Set(methods).size !== 3) throw new Error('Recipes must differ in preparation, not only in title.');
+  return recipes;
+}
+
+
+
+const context = $('Prepare Reservation').first().json;
+try {
+  const candidate = $input.first().json.candidates?.[0];
+  if (candidate?.finishReason !== 'STOP') throw new Error('Incomplete model response.');
+  const raw = candidate.content.parts.filter(/** Checks whether the current item matches the filter. @param part Current callback input. */ (part) => !part.thought).map(/** Maps the current item to its output value. @param part Current callback input. */ (part) => part.text || '').join('');
+  const recipes = validateRecipes(raw, context.request);
+  return [{ json: { recipes, quota: context.quota, valid: true } }];
+} catch {
+  return [{ json: { detail: 'Generated recipes failed validation. The three reserved recipe slots remain used today to prevent repeated charges.', quota: context.quota, valid: false } }];
+}

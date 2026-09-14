@@ -58,7 +58,7 @@ function validateParallel(steps, cooks) {
 function validateDirections(recipe, cooks, minutes) {
   const steps = recipe.directions;
   if (!Array.isArray(steps) || steps.length < cooks || steps.length > 50) throw new Error('Invalid directions.');
-  steps.forEach(/** Processes the current item in the enclosing operation. @param step Current callback input. @param index Current callback input. */ (step, index) => validateStep(step, index, steps, cooks));
+  steps.forEach(/** Processes the current item in the enclosing operation. @param step Current callback input. @param index Current callback input. */ (step, index) => { try { validateStep(step, index, steps, cooks); } catch (error) { error.validationField = 'directions[' + index + ']' + (/dependency/.test(error.message) ? '.dependsOn' : ''); throw error; } });
   validateParallel(steps, cooks);
   const finish = Math.max(...steps.map(/** Maps the current item to its output value. @param step Current callback input. */ (step) => step.startMinute + step.durationMinutes));
   if (finish > minutes) throw new Error('Directions exceed the cooking time.');

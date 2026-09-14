@@ -2,48 +2,42 @@
   "name": "Code a Cuisine - Error Logger",
   "nodes": [
     {
-      "id": "error-trigger",
+      "parameters": {},
+      "id": "45e7043d-ee64-46cb-8083-3d6b7609a31e",
       "name": "Workflow Error Trigger",
       "type": "n8n-nodes-base.errorTrigger",
       "typeVersion": 1,
       "position": [
-        -400,
+        0,
         0
       ],
-      "parameters": {},
-      "notes": "Starts when an assigned Code a Cuisine workflow fails.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Starts when an assigned Code a Cuisine workflow fails."
     },
     {
-      "id": "error-record",
+      "parameters": {
+        "jsCode": "const error = $input.first().json;\nconst timestamp = new Date().toISOString();\nconst workflow = String(error.workflow?.name || 'unknown');\nconst execution = String(error.execution?.id || 'trigger-failure');\nconst message = 'Execution failed. Inspect the restricted n8n execution log for details.';\nreturn [{ json: { logKey: `${timestamp}:${execution}`, timestamp, workflow, execution, message } }];"
+      },
+      "id": "c35804aa-25cd-45f6-8b9f-f82aa62c5f63",
       "name": "Prepare Sanitized Error Record",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -180,
+        224,
         0
       ],
-      "parameters": {
-        "jsCode": "const error = $input.first().json;\nconst timestamp = new Date().toISOString();\nconst workflow = String(error.workflow?.name || 'unknown');\nconst execution = String(error.execution?.id || 'trigger-failure');\nconst message = 'Execution failed. Inspect the restricted n8n execution log for details.';\nreturn [{ json: { logKey: `${timestamp}:${execution}`, timestamp, workflow, execution, message } }];"
-      },
-      "notes": "Normalizes execution error metadata for logging.",
-      "notesInFlow": true
+      "notesInFlow": true,
+      "notes": "Normalizes execution error metadata for logging."
     },
     {
-      "id": "error-table",
-      "name": "Save Sanitized Error Record",
-      "type": "n8n-nodes-base.dataTable",
-      "typeVersion": 1,
-      "position": [
-        40,
-        0
-      ],
       "parameters": {
         "operation": "upsert",
         "dataTableId": {
           "__rl": true,
-          "value": "SET_ERROR_LOG_TABLE_ID",
-          "mode": "id"
+          "value": "g509HG7np9ArmLlF",
+          "mode": "list",
+          "cachedResultName": "code_a_cuisine_errors",
+          "cachedResultUrl": "/projects/cI6zqkLGlSOPU3pe/datatables/g509HG7np9ArmLlF"
         },
         "matchType": "allConditions",
         "filters": {
@@ -68,76 +62,94 @@
             {
               "id": "logKey",
               "displayName": "logKey",
-              "type": "string",
-              "display": true,
               "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
               "readOnly": false,
               "removed": false
             },
             {
               "id": "timestamp",
               "displayName": "timestamp",
-              "type": "string",
-              "display": true,
               "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
               "readOnly": false,
               "removed": false
             },
             {
               "id": "workflow",
               "displayName": "workflow",
-              "type": "string",
-              "display": true,
               "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
               "readOnly": false,
               "removed": false
             },
             {
               "id": "execution",
               "displayName": "execution",
-              "type": "string",
-              "display": true,
               "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
               "readOnly": false,
               "removed": false
             },
             {
               "id": "message",
               "displayName": "message",
-              "type": "string",
-              "display": true,
               "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
               "readOnly": false,
               "removed": false
             }
-          ]
-        }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
       },
-      "notes": "Writes the error record to an n8n Data Table.",
-      "notesInFlow": true
-    },
-    {
-      "id": "error-email",
-      "name": "Notify Operator of Workflow Failure",
-      "type": "n8n-nodes-base.emailSend",
-      "typeVersion": 2.1,
+      "id": "b119d457-9284-4f54-9869-2d420fa821a8",
+      "name": "Save Sanitized Error Record",
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
       "position": [
-        260,
+        448,
         0
       ],
+      "notesInFlow": true,
+      "notes": "Writes the error record to an n8n Data Table."
+    },
+    {
       "parameters": {
         "fromEmail": "SET_SENDER_EMAIL",
         "toEmail": "SET_ALERT_EMAIL",
         "subject": "=Code a Cuisine n8n error: {{ $json.workflow }}",
         "emailFormat": "text",
-        "text": "=Workflow: {{ $json.workflow }}\nExecution: {{ $json.execution }}\nTime: {{ $json.timestamp }}\nError: {{ $json.message }}",
+        "text": "=Workflow: {{ $json.workflow }}\\nExecution: {{ $json.execution }}\\nTime: {{ $json.timestamp }}\\nError: {{ $json.message }}",
         "options": {}
       },
-      "notes": "Sends an optional SMTP alert after logging the workflow failure.",
+      "id": "e809b47d-2fde-4076-9bd2-c7ce9cc507ad",
+      "name": "Notify Operator of Workflow Failure",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        672,
+        0
+      ],
       "notesInFlow": true,
-      "disabled": true
+      "webhookId": "47eb64f9-d244-4ab5-bdcc-eb0ba62511c7",
+      "disabled": true,
+      "notes": "Sends an optional SMTP alert after logging the workflow failure."
     }
   ],
+  "pinData": {},
   "connections": {
     "Workflow Error Trigger": {
       "main": [
@@ -173,9 +185,16 @@
       ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
-    "executionOrder": "v1"
+    "executionOrder": "v1",
+    "binaryMode": "separate"
   },
+  "versionId": "4a9f58d7-69ef-43a9-b8c7-30f23f83fb72",
+  "meta": {
+    "instanceId": "ad9b5daf0dfb5719b0175233d6e06f24f3f3493d07a52c5757f0d24f1abb78ab"
+  },
+  "nodeGroups": [],
+  "id": "kCD1jJO2WgxZWRgN",
   "tags": []
 }
