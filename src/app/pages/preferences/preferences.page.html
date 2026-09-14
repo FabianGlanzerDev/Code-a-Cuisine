@@ -22,7 +22,7 @@
           @else if (status.systemRemaining < 3) { <p>System limit reached. Reset: midnight UTC.</p> }
           @else { <p>Daily reset: midnight UTC.</p> }
         } @else { <p>Checking available recipe slots…</p> }
-        @if (!quotaChecking) { <button type="button" (click)="refreshQuota()">Check recipe slots again</button> }
+        <button type="button" [disabled]="quotaChecking" (click)="refreshQuota()">Check recipe slots again</button>
         <p>One generation uses 3 slots. Failed model attempts can use slots too.</p>
       </div>
 

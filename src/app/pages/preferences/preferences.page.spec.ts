@@ -292,3 +292,26 @@ describe('Generation eligibility transitions', /** Guards the visible blocker an
   it('distinguishes missing ingredients, unfinished edits and missing preferences', checksInputTransitions);
   it('recovers from quota timeout without generating', fakeAsync(checksQuotaTransitions));
 });
+
+
+
+
+/** Malformed error metadata must still release loading and expose recovery. */
+function malformedFailureQuota(): void {
+  page.generateRecipes();
+  http.expectOne(/** Finds the sole generation. @param request HTTP request. */ request => request.method === 'POST')
+    .flush({ quota: { ipRemaining: 3 } }, { status: 502, statusText: 'Bad Gateway' });
+  expect(page.loading).toBeFalse(); expect(page.showQuantityPopup).toBeFalse();
+  expect(page.errorMessage).toContain('technical error');
+  http.expectOne(/** Reconciles once. @param request HTTP request. */ request => request.method === 'GET')
+    .flush({ ipLimit: 3, ipUsed: 3, ipRemaining: 0, systemLimit: 12, systemUsed: 3, systemRemaining: 9 });
+  expect(page.generationBlockedReason).toContain('daily recipe limit');
+}
+
+
+
+describe('Malformed generation error recovery', /** Keeps technical errors outside the ingredient popup. */ () => {
+  beforeEach(configurePreferences);
+  afterEach(/** Rejects leftover or repeated requests. */ () => http.verify());
+  it('handles invalid quota metadata without throwing out of the error handler', malformedFailureQuota);
+});

@@ -262,11 +262,11 @@
   .generate-button { padding: 16px 26px; font-size: 24px; font-weight: 600; line-height: 1; text-align: center; }
 }
 
-.quota-status { min-height: 84px; }
+.quota-status { min-height: 128px; }
 .quota-status p { margin: 0; }
 @media (max-width: 767px) {
   .preferences-content > h1 { font-size: 24px; line-height: 1.2; }
-  .quota-status { min-height: 164px; }
+  .quota-status { min-height: 224px; }
   .counter-grid h2, .counter-row { font-size: 18px; }
   .preference-card { padding: 32px 16px; }
   .time-options { gap: 8px; justify-content: space-between; }
@@ -279,3 +279,5 @@
 @media (max-width: 359px) { .time-options { justify-content: flex-start; } }
 
 #generation-blocked { min-height: 84px; width: 100%; margin: 0; font-size: 16px; line-height: 20px; }
+
+.quota-status button { min-height: 32px; padding: 4px 8px; margin-block: 4px; font: inherit; color: inherit; }

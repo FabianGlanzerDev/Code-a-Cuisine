@@ -268,14 +268,22 @@ export class PreferencesPage implements OnInit {
    */
   private generationErrorMessage(error: unknown): string {
     const detail = error instanceof HttpErrorResponse ? error.error?.detail : undefined;
-    if (error instanceof HttpErrorResponse) this.quota.set(error.error?.quota);
-    if (error instanceof HttpErrorResponse && (error.status >= 500 || error.status === 0) && !error.error?.quota) this.reconcileQuota();
+    if (error instanceof HttpErrorResponse && !this.acceptErrorQuota(error)
+      && (error.status >= 500 || error.status === 0 || error.error?.quota)) this.reconcileQuota();
     if (error instanceof HttpErrorResponse && error.error?.code === 'MODEL_OUTPUT_INVALID') return 'The generated recipes failed technical validation. This does not mean your ingredients are insufficient. Reserved recipe slots remain used today. No automatic retry was made.';
     if (typeof detail === 'string') return detail;
     if (error instanceof HttpErrorResponse && (error.status >= 500 || error.status === 0)) {
       return 'The generation service could not complete the request. This is a technical error, not a daily-limit message. Slots may already be reserved and recipes may still be processing. Check the cookbook later before another attempt.';
     }
     return 'Recipe generation failed. Please try again later.';
+  }
+
+
+
+  /** Rejects malformed error metadata without throwing from an RxJS error handler. @param error HTTP failure. */
+  private acceptErrorQuota(error: HttpErrorResponse): boolean {
+    if (!error.error?.quota) return false;
+    try { this.quota.set(error.error.quota); return true; } catch { return false; }
   }
 
 
