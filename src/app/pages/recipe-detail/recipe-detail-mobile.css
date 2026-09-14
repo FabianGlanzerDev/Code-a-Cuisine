@@ -2,15 +2,15 @@
 .section-toggle { display: block; margin: 24px auto 0; padding: 12px; border: 0; background: transparent; color: #396039; font: inherit; cursor: pointer; }
 @media (max-width: 767px) {
   .detail-card { padding: 8px; border-width: 2px; }
-  .detail-summary { padding: 24px; gap: 48px; }
+  .detail-summary { padding: 16px; gap: 48px; }
   .detail-title-block h1 { font-size: 24px; line-height: 1; }
   .nutrition-table { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
   .nutrition-table strong { font-size: 16px; font-weight: 500; }
   .direction-card header { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: start; }
-  .direction-card h3 { font-size: 18px; line-height: 1.2; align-items: start; }
+  .direction-card h3 { font-size: 18px; font-weight: 700; line-height: 1.2; align-items: start; }
   .direction-card h3 span { width: 28px; height: 28px; flex-basis: 28px; }
-  .direction-card > p { font-size: 18px; font-weight: 500; line-height: 1; margin-top: 24px; }
-  .direction-card > .direction-note { line-height: 1.25; margin-bottom: 0; }
+  .direction-card > p { font-size: 18px; font-weight: 500; line-height: 1; margin-top: 16px; }
+  .direction-card > .direction-note { font-size: 16px; font-weight: 400; line-height: 1.25; margin-bottom: 0; }
   .chef-badge { width: auto; height: auto; min-height: 27px; padding: 2px 4px; font-size: 18px; }
   .directions-grid { gap: 24px; }
   .detail-time { font-size: 18px; line-height: 1; color: #396039; }
@@ -25,3 +25,13 @@
 
 /* Narrower than the mobile reference: keep nutrition labels readable. */
 @media (max-width: 359px) { .nutrition-table { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } }
+
+@media (max-width: 767px) {
+  .section-visual picture img { width: 100%; height: auto; }
+  .section-visual h2, .directions-section .section-visual h2 { top: 50%; width: auto; font-size: 24px; }
+  .section-toggle { min-height: 34px; padding: 8px 16px; border-radius: 16px; font-size: 18px; line-height: 1; }
+  .direction-card header { gap: 8px; }
+  .direction-card h3 span { margin-right: 8px; }
+  .task-split h2 { font-size: 24px; }
+  .task-split > .section-toggle { margin: 16px 0; }
+}

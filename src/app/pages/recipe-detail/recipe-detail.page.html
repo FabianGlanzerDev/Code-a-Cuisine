@@ -93,7 +93,7 @@
 
       <section class="ingredient-section">
         <div class="section-visual">
-          <img src="img/Hero Directions.png" alt="">
+          <picture><source media="(max-width: 767px)" srcset="img/ingredients-mobile.svg"><img src="img/Hero Directions.png" alt=""></picture>
           <h2>Ingredients</h2>
         </div>
 
@@ -121,7 +121,7 @@
 
       <section class="directions-section">
         <div class="section-visual">
-          <img src="img/Hero for silgle recipe view.png" alt="">
+          <picture><source media="(max-width: 767px)" srcset="img/directions-mobile.svg"><img src="img/Hero for silgle recipe view.png" alt=""></picture>
           <h2>Directions</h2>
         </div>
         <div class="directions-grid" id="recipe-directions" [hidden]="!directionsExpanded">
@@ -139,7 +139,7 @@
             </header>
             @if (direction.parallel || direction.timingNote) {
             <p class="direction-note">
-              @if (direction.parallel) { <strong>Parallel step.</strong> }
+              @if (direction.parallel) { <span>Parallel step.</span> }
               {{ direction.timingNote }}
             </p>
             }
@@ -152,8 +152,9 @@
 
       @if (recipe.cooksAmount > 1) {
       <section class="task-split" aria-labelledby="task-split-title">
-        <h2 id="task-split-title">Task split</h2>
-        <div class="task-split__grid">
+        <h2 id="task-split-title">Overview by cook</h2>
+        <button class="section-toggle" type="button" [attr.aria-expanded]="tasksExpanded" aria-controls="recipe-cook-overview" (click)="tasksExpanded = !tasksExpanded">{{ tasksExpanded ? 'Hide cook overview' : 'Show cook overview' }}</button>
+        <div class="task-split__grid" id="recipe-cook-overview" [hidden]="!tasksExpanded">
           @for (cook of cookNumbers; track cook) {
           <section>
             <h3>Chef {{ cook }}</h3>

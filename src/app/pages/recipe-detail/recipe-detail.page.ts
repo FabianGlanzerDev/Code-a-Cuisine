@@ -15,6 +15,7 @@ import { readBrowserValue, writeBrowserValue } from '../../services/browser-stor
 export class RecipeDetailPage implements OnInit {
   ingredientsExpanded = true;
   directionsExpanded = true;
+  tasksExpanded = false;
 
   recipe: Recipe | null = null;
   loading = true;

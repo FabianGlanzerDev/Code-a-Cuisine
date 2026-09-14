@@ -337,6 +337,6 @@
 
 @media (max-width: 767px) {
   .recipe-row:nth-child(even) { background: rgb(250 240 230 / 70%); }
-  .recipe-list { gap: 24px; }
+  .recipe-list { gap: 32px; }
   .recipe-list-nav .back-link__desktop { display: none; }
 }
