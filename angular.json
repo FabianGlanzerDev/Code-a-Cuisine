@@ -30,6 +30,7 @@
           },
           "configurations": {
             "production": {
+              "baseHref": "/code-a-cuisine/",
               "budgets": [
                 {
                   "type": "initial",

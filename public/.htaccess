@@ -1,0 +1,10 @@
+# Apache 2.4, in /code-a-cuisine/. Requires AllowOverride FileInfo and mod_rewrite.
+RewriteEngine On
+RewriteBase /code-a-cuisine/
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [END]
+# Missing assets must return 404, never the Angular document.
+RewriteRule ^(?:img|fonts|media|animations)/ - [END]
+RewriteRule \.[^/]+$ - [END]
+RewriteRule ^ index.html [END]
